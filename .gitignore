@@ -5,7 +5,17 @@
 *-Ex.R
 
 # R data files from past sessions
-.Rdata
+.RData
 
 # vim buffers
 *.swp
+
+# java compilation
+build
+doc
+
+# test output
+output_test
+
+# svn
+.svn
