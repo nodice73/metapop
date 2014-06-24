@@ -133,7 +133,7 @@ public class ConsumptionODE implements FirstOrderDifferentialEquations {
         double S = y[y.length-1];
         double S_new = 0.0;
         double gr = 0.0;
-        double gr_max = 0.0;
+        double dr = 0.0;
         double release = 0.0;
         double consumption = 0.0;
         FitnessCalculator fc;
@@ -144,7 +144,6 @@ public class ConsumptionODE implements FirstOrderDifferentialEquations {
             fc = subpop.getFitnessCalculator();
             gr = fc.calculateGrowthRate(S);
             dr = fc.calculateDeathRate(S);
-            gr_max = fc.getMaxGrowthRate();
 
             // dN/dt
             yDot[i] = y[i]*(gr-dr);
@@ -179,6 +178,11 @@ public class ConsumptionODE implements FirstOrderDifferentialEquations {
         }
         init_map.put("resource", init[n_subpops]);
         result_map.put("resource", result[n_subpops]);
+    }
+
+    public Map<String,Double> getResult() {
+        makeResults();
+        return result_map;
     }
 
     public void reportResults() {
