@@ -143,10 +143,11 @@ public class ConsumptionODE implements FirstOrderDifferentialEquations {
             subpop = subpops.get(i);
             fc = subpop.getFitnessCalculator();
             gr = fc.calculateGrowthRate(S);
+            dr = fc.calculateDeathRate(S);
             gr_max = fc.getMaxGrowthRate();
 
             // dN/dt
-            yDot[i] = y[i]*gr;
+            yDot[i] = y[i]*(gr-dr);
 
             S_new += y[i]*(subpop.getReleaseRate()*scale -
                            subpop.getGamma()*gr);
