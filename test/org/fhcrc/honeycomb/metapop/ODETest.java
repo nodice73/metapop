@@ -124,30 +124,6 @@ public class ODETest {
     }
 
     @Test
-    public void resourceExcess() {
-        initial_anc_cheats = 1;
-        initial_resource = 1e6;
-        makePops();
-        ConsumptionODE ode = new ConsumptionODE(test_pop);
-        ode.integrate(test_pop);
-
-        //System.out.println("\nresourceExcess()");
-        compareGrowthRates(ode);
-    }
-
-    @Test
-    public void resourceLimited() {
-        initial_anc_cheats = (int) 1e7;
-        initial_resource = 0.001;
-        makePops();
-        ConsumptionODE ode = new ConsumptionODE(test_pop);
-        ode.integrate(test_pop);
-
-        //System.out.println("\nresourceLimited()");
-        compareGrowthRates(ode);
-    }
-
-    @Test
     public void singleCoop() {
         initial_anc_coops = 100;
         initial_resource = 0;
@@ -155,13 +131,8 @@ public class ODETest {
         ConsumptionODE ode = new ConsumptionODE(test_pop);
 
         ode.integrate(test_pop);
-        System.out.println("\nsingleCoop()");
-        compareGrowthRates(ode);
-
-        ode.integrate(test_pop);
-        System.out.println("\nsingleCoop()");
-        compareGrowthRates(ode);
-
+        System.out.println("here");
+        System.out.println(ode.getResult().toString());
     }
 
     @Test
@@ -207,34 +178,5 @@ public class ODETest {
         double resource = ode.integrateResource();
         System.out.println("resource: " + resource);
         assertTrue("resource < 0: " + resource, resource > 0.0);
-    }
-
-    private void compareGrowthRates(ConsumptionODE ode) {
-        for (Subpopulation subpop:test_pop.getSubpopulations()) {
-            if (subpop.getSize()==0) continue;
-            String id = subpop.getId();
-            System.out.println(id);
-            ode.reportResults();
-
-            double resource = ode.integrateResource();
-            resource = ode.integrateResource();
-            System.out.println("  integrated resource: " + resource);
-
-            double gr = subpop.getGrowthRate(resource);
-            System.out.println("  growth rate by consumption: " + gr);
-
-            subpop.setSize(subpop.getSize() + subpop.getBirths(resource));
-
-            double gr2 = ode.calculateGrowthRate(id);
-            System.out.println("  growth rate direct: " + gr2);
-
-            //System.out.println("resource array: ");
-            //ode.printResourceArray();
-
-            if (!Double.isNaN(gr) && !Double.isNaN(gr2)) {
-                assertEquals("growth rate methods disagree",
-                             gr, gr2, 1e-3);
-            }
-        }
     }
 }
