@@ -247,42 +247,27 @@ public class Population {
             //ConsumptionODE ode = new ConsumptionODE(this);
             ode.integrate(this);
             resource = ode.integrateResource();
+            Map<String, Double> result = ode.getResult();
 
             if (resource < RESOURCE_TOL) {
-                System.out.println("resource < RESOURCE_TOL: " +
-                                   new BigDecimal(resource));
-                System.out.println("second attempt...");
-                System.out.println("resource was " + 
-                                   new BigDecimal(prev_resource));
-                resource = prev_resource + MIN_RESOURCE;
-                System.out.println("resource set to " +
-                                   new BigDecimal(resource));
-                ode.integrate(this);
-                resource = ode.integrateResource();
-                System.out.println("resource now: "  + resource);
-
-                    if (resource < RESOURCE_TOL) {
-                        String fail = 
-                                "resource < RESOURCE_TOL: " +
-                                new BigDecimal(resource) + "\n" +
-                                "prev resource: " + new BigDecimal(prev_resource) +
-                                "\npop:\n" + this +
-                                "\node:\n" + ode.toString();
-                        throw new RuntimeException(fail);
-                    }
+                String fail = 
+                    "resource < RESOURCE_TOL: " +
+                    new BigDecimal(resource) + "\n" +
+                    "prev resource: " + new BigDecimal(prev_resource) +
+                    "\npop:\n" + this +
+                    "\node:\n" + ode.toString();
+                throw new RuntimeException(fail);
             } else if (resource < 0) {
                 removeResidualResource();
             }
             for (Subpopulation subpop:subpopulations) {
                 int births = subpop.getBirths(resource);
                 int deaths = subpop.getDeaths(resource);
-
                 subpop.setSize(subpop.getSize() + births - deaths);
             }
         } else {
             for (Subpopulation subpop:subpopulations) {
                 int deaths = subpop.getDeaths(resource);
-
                 subpop.setSize(subpop.getSize() - deaths);
             }
         }
