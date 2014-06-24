@@ -553,6 +553,7 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                                                     function(x) x[cond.idx])
 
             timepoints  <- list.files(runs[j], full.names=TRUE)
+            run.id <- basename(runs[j])
 
             info.file <- subset(timepoints, grepl(INFO_FILE, timepoints))
             if (length(info.file)==0) {
@@ -569,7 +570,7 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
             final.hr <- all.hrs[length(all.hrs)]
             timepoints.ordered <- timepoints[order(all.timepoints)]
 
-            run.id <- basename(runs[j])
+
             if (run.id %in% current.df$run.id) {
                 if (current.df[current.df$run.id==run.id,]$complete) {
                     cat(run.id, "exists, skipping.\n")
@@ -816,7 +817,6 @@ plot.survival <- function(dat, split2="occ", device="x11",
     for (mig.range in split(dat, dat$range)) {
         rang <- unique(mig.range$range)
         for (s2 in split(mig.range, mig.range[[split2]])) {
-            browser()
             occ <- sprintf("%.2f", unique(s2$occ))
             split2.val <- sprintf("%.2f", unique(s2[[split2]]))
             plot.name <- paste0(rang, ", ", split2, "=", split2.val,
