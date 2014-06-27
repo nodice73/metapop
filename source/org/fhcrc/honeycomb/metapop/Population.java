@@ -247,7 +247,6 @@ public class Population {
             //ConsumptionODE ode = new ConsumptionODE(this);
             ode.integrate(this);
             resource = ode.integrateResource();
-            Map<String, Double> result = ode.getResult();
 
             if (resource < RESOURCE_TOL) {
                 String fail = 
