@@ -55,7 +55,7 @@ class AdaptiveRaceParams(object):
         self.migration_type = ['indv']
         self.coop_freq = [0.5]
         self.initial_pop_size = [1e5]
-        self.mutant_freqs = [0, 2e-5, 2e-4, 2e-3,]
+        self.mutant_freqs = [0, 2e-5, 2e-4, 2e-3]
         self.frac_occupied = [0.25, 0.5, 0.75, 1]
         self.coop_to_cheat = [0] 
         self.cheat_to_coop = [0]
@@ -131,7 +131,7 @@ class AdaptiveRaceParams(object):
                         print ("queue is {}. {} of {} jobs sent."
                                " Sleeping...".format(queue, sent, n_runs))
                         sys.stdout.flush()
-                        sleep(60)
+                        sleep(10)
                     else:
                         break
 
@@ -281,12 +281,14 @@ class ReleaseTest(AdaptiveRaceParams):
         self.save_every = [1]
         self.coop_freq = [1]
         self.coop_release = ([x + y/20.0 for x in range (0,3) 
-                                for y in range(0,20)] + range(3,100))
+                                for y in range(0,20)] + range(3,100) +
+                                range(120, 1000, 20))
 
 class AncReleaseTest(ReleaseTest):
     def __init__(self):
         super(AncReleaseTest, self).__init__()
         self.mutant_freqs = [0]
+        self.coop_release = [x/20.0 for x in range(4,20)]
         self.output = 'release_test/anc'
 
 class EvoReleaseTest(ReleaseTest):
@@ -326,15 +328,12 @@ if __name__ == "__main__":
     #ps = Benchmark()
     #ps = Test()
     #ps = AncReleaseTest()
-    #ps = AdaptiveRace()
-    #ps = CoopToCheat()
-    #ps = LongRunning2()
-    #ps = PeriodicDilution99_1e3()
+    #ps = EvoReleaseTest()
+    ps = AdaptiveRace()
     #ps = NoMut()
     #ps = LowRelease()
     #ps = VeryLowRelease()
-    #ps = CheaterTitration()
     #ps = LowOcc()
-    ps = HighOcc()
-    #ps.test(1)
+    #ps = HighOcc()
+    #ps.test(30)
     ps.run(30)
