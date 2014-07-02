@@ -94,7 +94,7 @@ class AdaptiveRaceParams(object):
                          "time java -d64 -server -Xmx{0}m "
                          "-XX:+HeapDumpOnOutOfMemoryError "
                          "-Djava.io.tmpdir=$TMPDIR".format(self.mem))
-            self.sbatch = ("sbatch --mem={} -n1 -t{} --constraint=rx200 "
+            self.sbatch = ("sbatch --mem={} -n1 -t{} "
                            "--wrap='".format(self.mem2, self.time))
             self.end = "'"
             self.save_base = ('/home/ajwaite/shougroup/lab_users/Adam/'
