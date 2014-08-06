@@ -26,7 +26,7 @@ xlab.dist <- 2.7
 ylab.dist <- 3.6
 axis.cex <- 1.2
 pch.cex <- 1.5
-fit.col <- "darkorange"
+fit.col <- "black"
 
 metapop.process <- function(path, nrows=-1) {
     if (is.na(file.info(path)$size)) {
@@ -152,6 +152,10 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
         }
     } else {
         y.range <- c(passed.ylim[1], passed.ylim[2])
+        if (y.range[2] == 0) {
+            cat("y min = 0, setting to 1...\n")
+            y.range[2] <- 1
+        }
     }
 
     log.hrs <- hrs+1
@@ -349,7 +353,8 @@ release.test <- function(folder, max.release=1e6, A=7, max.r=log(2), lag=100,
                          ts.scale=200) 
 {
     res <- data.frame()
-    for (dat.file in list.files(folder, full.names=TRUE)) {
+    for (dat.file in list.files(folder, full.names=TRUE, include.dirs=FALSE))
+    {
         release.rate <- as.numeric(sub(".*release=(.*?)_.*",
                                        "\\1", dat.file, perl=TRUE))
         cat("release rate =", release.rate,"\n")
@@ -463,6 +468,40 @@ plot.growth.vs.release <- function(dat, max.release, device="x11",
     print(confint(fit))
 }
 
+plot.survival.freqs <- function(dat, device="x11", name) {
+    graphics.off()
+    min.val <- 0
+    max.val <- 100
+    spacing <- 0
+    survival.cutoff <- 0.1
+
+    h <- hist(dat$coop.freq.mean, plot=FALSE)
+    str(h)
+    freqs <- 100 * h$counts / sum(h$counts)
+    error.counts <- sqrt(h$counts)
+    error.freqs <- (freqs/h$counts) * error.counts
+    error.freqs[freqs<min.val] <- NA
+    freqs.upper <- freqs + 2*error.freqs
+    freqs.lower <- freqs - 2*error.freqs
+    freqs.lower[freqs.lower<=0] <- min.val
+
+    freqs[freqs<min.val] <- min.val
+    default.plot(h=10,w=20,device=device,name=name)
+    bp <- barplot(freqs, log="", names.arg=h$mids, axes=FALSE, ann=FALSE,
+                  axisnames=FALSE, space=spacing, ylim=c(min.val,max.val))
+    arrows(bp, freqs.lower, bp, freqs.upper, code=3, length=0.1, angle=90)
+    axis(1, lwd=par()$lwd, cex.axis=1.5, at=bp, labels=h$mids)
+    axis(2, lwd=par()$lwd, las=2, cex.axis=1.5)
+    box()
+    mtext(side=1, text="Cooperator frequency (midpoint of bin)",
+          line=3.0, cex=3.5)
+    mtext(side=2, text="Occurrence (%)", line=4, cex=3.5)
+    abline(v=survival.cutoff*10+(spacing*1.5), lty=2, col="red", lwd=5)
+    title(name)
+
+    if (device != "x11") dev.off()
+}
+
 plot.survival.prob <- function(dat,device="x11", p, k, x,
                                name="survival_prob_vs_release", ...)
 {
@@ -470,7 +509,7 @@ plot.survival.prob <- function(dat,device="x11", p, k, x,
     graphics.off()
     default.plot(w=square.plot.dim,h=square.plot.dim,device=device,name=name)
     plot(survival.prob~release.rate, data=agg.dat, ann=FALSE, axes=FALSE,
-         cex=pch.cex, type="n", log="x",  ...)
+         cex=pch.cex, subset=survival.prob>0, type="n", log="x",  ...)
     #axis(1,lwd=par()$lwd)
     log.axis(1,lwd=par()$lwd, cex.axis=axis.cex)
     axis(2,lwd=par()$lwd, las=2, cex.axis=axis.cex)
@@ -479,16 +518,21 @@ plot.survival.prob <- function(dat,device="x11", p, k, x,
     points(survival.prob~release.rate, data=agg.dat, cex=pch.cex, ...)
     box()
 
-    fit <- nls(survival.prob~(p*(release.rate-x))/ (k+(release.rate-x)),
-               data=dat, start=list(p=p,k=k,x=x), subset=survival.prob>0 )
+    fit <- nls(survival.prob~(p*(release.rate-x)) / (k+(release.rate-x)),
+               data=dat, start=list(p=p,k=k,x=x),subset=survival.prob>0)
 
     p.max <- coef(fit)['p']
     k.survive <- coef(fit)['k']
     x.shift <- coef(fit)['x']
-
-    curve((p.max*(x-x.shift))/(k.survive+(x-x.shift)),
-          add=TRUE, from=x.shift, to=as.list(match.call()$xlim)[[3]],
-          col=fit.col, lty=2, lwd=5)
+    if (x.shift <= 0) x.start <- .01 else x.start <- x.shift
+    x.end <- match.call()$xlim
+    if (!is.null(x.end)) {
+        x.end <- as.list(x.end)[[3]]
+    } else {
+        x.end <- max(agg.dat$release.rate)
+    }
+    
+    curve((p.max*(x-x.shift))/(k.survive+(x-x.shift)), add=TRUE, from=x.start, to=x.end, col=fit.col, lty=2, lwd=5)
 
     print(fit)
     print(confint(fit))
@@ -549,11 +593,26 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
         cat(length(runs), "runs in folder\n")
 
         for (j in seq_along(runs)) {
+            run.id <- basename(runs[j])
+            if (run.id %in% current.df$run.id) {
+                if (current.df[current.df$run.id==run.id,]$complete) {
+                    cat(run.id, "exists, skipping.\n")
+                    next
+                } else {
+                    cat("updating", run.id, ".\n")
+                }
+            } else {
+                cat("adding", run.id, "\n")
+            }
+            if (n.timepoints == 1) {
+                cat("\n\tonly one file found in run", run.id, "\n")
+                next
+            }
+
             res[row.idx, names(var.list)] <- lapply(var.list,
                                                     function(x) x[cond.idx])
 
             timepoints  <- list.files(runs[j], full.names=TRUE)
-            run.id <- basename(runs[j])
 
             info.file <- subset(timepoints, grepl(INFO_FILE, timepoints))
             if (length(info.file)==0) {
@@ -569,23 +628,6 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
             all.hrs <- sort(all.timepoints/info$ts.scale)
             final.hr <- all.hrs[length(all.hrs)]
             timepoints.ordered <- timepoints[order(all.timepoints)]
-
-
-            if (run.id %in% current.df$run.id) {
-                if (current.df[current.df$run.id==run.id,]$complete) {
-                    cat(run.id, "exists, skipping.\n")
-                    next
-                } else {
-                    cat("updating", run.id, ".\n")
-                }
-            } else {
-                cat("adding", run.id, "\n")
-            }
-
-            if (n.timepoints == 1) {
-                cat("\n\tonly one file found in run", run.id, "\n")
-                next
-            }
 
             if (j==1) {
                 a.run <-metapop.process(timepoints[1], info$size)$summary
