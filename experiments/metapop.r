@@ -604,10 +604,6 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
             } else {
                 cat("adding", run.id, "\n")
             }
-            if (n.timepoints == 1) {
-                cat("\n\tonly one file found in run", run.id, "\n")
-                next
-            }
 
             res[row.idx, names(var.list)] <- lapply(var.list,
                                                     function(x) x[cond.idx])
@@ -620,8 +616,13 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                 next
             }
             info <- parse.infofile(info.file)
+
             timepoints <- subset(timepoints, !grepl(INFO_FILE, timepoints))
             n.timepoints <- length(timepoints)
+            if (n.timepoints == 1) {
+                cat("\n\tonly one file found in run", run.id, "\n")
+                next
+            }
 
             all.timepoints <- as.numeric(sub(name.match,"\\1", timepoints,
                                              perl=TRUE))
