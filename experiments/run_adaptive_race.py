@@ -94,7 +94,7 @@ class AdaptiveRaceParams(object):
                          "time java -d64 -server -Xmx{0}m "
                          "-XX:+HeapDumpOnOutOfMemoryError "
                          "-Djava.io.tmpdir=$TMPDIR".format(self.mem))
-            self.sbatch = ("sbatch --mem={} -n1 -t{} --constraint=rx200 "
+            self.sbatch = ("sbatch --mem={} -n1 -t{} "
                            "--wrap='".format(self.mem2, self.time))
             self.end = "'"
             self.save_base = ('/home/ajwaite/shougroup/lab_users/Adam/'
@@ -288,7 +288,7 @@ class AncReleaseTest(ReleaseTest):
     def __init__(self):
         super(AncReleaseTest, self).__init__()
         self.mutant_freqs = [0]
-        self.coop_release = [x/20.0 for x in range(4,20)]
+        self.coop_release = range(1000, 5000, 100)
         self.output = 'release_test/anc'
 
 class EvoReleaseTest(ReleaseTest):
@@ -302,12 +302,12 @@ class Test(AdaptiveRaceParams):
         super(Test, self).__init__()
         self.migration_ranges = ['global']
         self.mutant_freqs = [2e-5]
-        self.migration_rates = [1e-7]
-        self.frac_occupied = [0.25]
-        self.initial_resource = [0.0]
-        self.coop_to_cheat = [0.0]
-        self.seeds = [str(i) for i in '1'*self.n_seeds]
-        self.save_every = [10]
+        self.migration_rates = [0]
+        self.frac_occupied = [0.5]
+        #self.seeds = [str(i) for i in '1'*self.n_seeds]
+        self.save_every = [1]
+        self.hours = [1000]
+
 
 class Benchmark(AdaptiveRaceParams):
     def __init__(self):
@@ -327,13 +327,13 @@ class Benchmark(AdaptiveRaceParams):
 if __name__ == "__main__":
     #ps = Benchmark()
     #ps = Test()
-    #ps = AncReleaseTest()
+    ps = AncReleaseTest()
     #ps = EvoReleaseTest()
-    ps = AdaptiveRace()
+    #ps = AdaptiveRace()
     #ps = NoMut()
     #ps = LowRelease()
     #ps = VeryLowRelease()
     #ps = LowOcc()
     #ps = HighOcc()
     #ps.test(30)
-    ps.run(30)
+    ps.run(1)
