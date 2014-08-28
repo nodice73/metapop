@@ -519,7 +519,7 @@ plot.survival.prob <- function(dat,device="x11", p, k, x,
     box()
 
     fit <- nls(survival.prob~(p*(release.rate-x)) / (k+(release.rate-x)),
-               data=dat, start=list(p=p,k=k,x=x),subset=survival.prob>0)
+               data=agg.dat, subset=survival.prob>0.001, start=list(p=p,k=k,x=x))
 
     p.max <- coef(fit)['p']
     k.survive <- coef(fit)['k']
@@ -577,6 +577,7 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
     row.idx <- 1
     n.cols <- 0
     col.names <- ""
+    remove.rows <- NULL
     for (condition in conditions) {
         #if (cond.idx!=158) { cond.idx <- cond.idx+1; next }
         runs <- list.files(condition, full.names=TRUE)
@@ -592,17 +593,28 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
         cat(cond.idx, "of", n.conditions, "conditions\n")
         cat(length(runs), "runs in folder\n")
 
+        adding <- FALSE
+        updating <- FALSE
+        current.df.row <- NULL
         for (j in seq_along(runs)) {
             run.id <- basename(runs[j])
-            if (run.id %in% current.df$run.id) {
-                if (current.df[current.df$run.id==run.id,]$complete) {
+            current.df.row <- current.df[current.df$run.id==run.id,]
+            if (nrow(current.df.row) == 1) {
+                if (current.df.row$complete) {
                     cat(run.id, "exists, skipping.\n")
                     next
                 } else {
                     cat("updating", run.id, ".\n")
+                    updating <- TRUE
                 }
-            } else {
+            } else if (nrow(current.df.row) == 0) {
                 cat("adding", run.id, "\n")
+                adding <- TRUE
+            } else {
+                cat("id ", run.id, " has multiple entries...\n")
+                remove.rows <- c(remove.rows,
+                                 as.numeric(row.names(current.df.row)[-1]))
+                if (any(current.df.row$complete)) next
             }
 
             res[row.idx, names(var.list)] <- lapply(var.list,
@@ -668,16 +680,26 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
 
             mean.freq <- mean(coop.freqs)
             sd.freq   <- ifelse(length(coop.freqs)==1, 0, sd(coop.freqs))
-
-            res[row.idx,]$condition       <- cond.idx
-            res[row.idx,]$run.id          <- run.id
-            res[row.idx,]$coop.freq.mean  <- mean.freq
-            res[row.idx,]$coop.freq.sd    <- sd.freq
-            res[row.idx,]$timepoints.used <- used
-            res[row.idx,]$last            <- last
-            res[row.idx,]$hrs             <- final.hr
-            res[row.idx,]$complete        <- complete
-            row.idx <- row.idx+1
+            if (adding) {
+                res[row.idx,]$condition       <- cond.idx
+                res[row.idx,]$run.id          <- run.id
+                res[row.idx,]$coop.freq.mean  <- mean.freq
+                res[row.idx,]$coop.freq.sd    <- sd.freq
+                res[row.idx,]$timepoints.used <- used
+                res[row.idx,]$last            <- last
+                res[row.idx,]$hrs             <- final.hr
+                res[row.idx,]$complete        <- complete
+                row.idx <- row.idx+1
+            } else if (updating) {
+                current.df[current.df.row,]$condition       <- cond.idx
+                current.df[current.df.row,]$run.id          <- run.id
+                current.df[current.df.row,]$coop.freq.mean  <- mean.freq
+                current.df[current.df.row,]$coop.freq.sd    <- sd.freq
+                current.df[current.df.row,]$timepoints.used <- used
+                current.df[current.df.row,]$last            <- last
+                current.df[current.df.row,]$hrs             <- final.hr
+                current.df[current.df.row,]$complete        <- complete
+            }
         }
         n.cols <- 0
         col.names <- ""
@@ -685,6 +707,7 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
     }
     cat("\n")
     res <- res[1:(row.idx-1),]
+    current.df <- current.df[-remove.rows,]
     current.df <- rbind(current.df, res)
     current.df
 }
