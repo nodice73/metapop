@@ -475,7 +475,7 @@ plot.survival.freqs <- function(dat, device="x11", name) {
     spacing <- 0
     survival.cutoff <- 0.1
 
-    h <- hist(dat$coop.freq.mean, plot=FALSE)
+    h <- hist(dat$coop.freq.mean, breaks=seq(0,1,0.1), plot=FALSE)
     str(h)
     freqs <- 100 * h$counts / sum(h$counts)
     error.counts <- sqrt(h$counts)
@@ -599,7 +599,10 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
         for (j in seq_along(runs)) {
             run.id <- basename(runs[j])
             current.df.row <- current.df[current.df$run.id==run.id,]
-            if (nrow(current.df.row) == 1) {
+            if (nrow(current.df.row)==0 || is.null(current.df.row)) {
+                cat("adding", run.id, "\n")
+                adding <- TRUE
+            } else if (nrow(current.df.row) == 1) {
                 if (current.df.row$complete) {
                     cat(run.id, "exists, skipping.\n")
                     next
@@ -607,9 +610,6 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                     cat("updating", run.id, ".\n")
                     updating <- TRUE
                 }
-            } else if (nrow(current.df.row) == 0) {
-                cat("adding", run.id, "\n")
-                adding <- TRUE
             } else {
                 cat("id ", run.id, " has multiple entries...\n")
                 remove.rows <- c(remove.rows,
@@ -712,7 +712,7 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
     current.df
 }
 
-plot.summary <- function(dat, device="x11", save.to, jit=NULL, gap=2, 
+plot.summary <- function(dat, device="x11", save.to=NULL, jit=NULL, gap=2, 
                          leg.x=1, leg.y=0.8, min.hr=2e4, ...)
 {
     graphics.off()
@@ -747,9 +747,13 @@ plot.summary <- function(dat, device="x11", save.to, jit=NULL, gap=2,
         for (mig.range.occ in split(mig.range, mig.range$occ)) {
             plot.name <- paste(unique(mig.range.occ$range), ", ",
                                "occ=", unique(mig.range.occ$occ), sep="")
-            plot.path <- file.path(save.to, plot.name)
-            if (!file.exists(save.to)) dir.create(save.to, recursive=TRUE)
-            default.plot(w=long.plot.dim,h=square.plot.dim, dev=device, name=plot.path)
+            plot.path <- NULL
+            if (device != "x11") {
+                plot.path <- file.path(save.to, plot.name)
+                if (!file.exists(save.to)) dir.create(save.to, recursive=TRUE)
+            }
+            default.plot(w=long.plot.dim,h=square.plot.dim, dev=device, 
+                         name=plot.path)
             plot(x.range, y.range, type="n", ann=FALSE, axes=FALSE, log="",
                  xaxs='i')
             title(main=plot.name,cex.main=1)
