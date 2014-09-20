@@ -598,7 +598,8 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
         current.df.row <- NULL
         for (j in seq_along(runs)) {
             run.id <- basename(runs[j])
-            current.df.row <- current.df[current.df$run.id==run.id,]
+            matching.id.rows <- which(current.df$run.id==run.id)
+            current.df.row <- current.df[matching.id.rows,]
             if (nrow(current.df.row)==0 || is.null(current.df.row)) {
                 cat("adding", run.id, "\n")
                 adding <- TRUE
@@ -612,9 +613,14 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                 }
             } else {
                 cat("id ", run.id, " has multiple entries...\n")
-                remove.rows <- c(remove.rows,
-                                 as.numeric(row.names(current.df.row)[-1]))
-                if (any(current.df.row$complete)) next
+                if (any(current.df.row$complete)) {
+                    remove.rows <- 
+                        c(remove.rows, 
+                          matching.id.rows[!current.df.row$complete])
+                    next
+                } else {
+                    remove.rows <- c(remove.rows, matching.id.rows[-1])
+                }
             }
 
             res[row.idx, names(var.list)] <- lapply(var.list,
@@ -691,14 +697,15 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                 res[row.idx,]$complete        <- complete
                 row.idx <- row.idx+1
             } else if (updating) {
-                current.df[current.df.row,]$condition       <- cond.idx
-                current.df[current.df.row,]$run.id          <- run.id
-                current.df[current.df.row,]$coop.freq.mean  <- mean.freq
-                current.df[current.df.row,]$coop.freq.sd    <- sd.freq
-                current.df[current.df.row,]$timepoints.used <- used
-                current.df[current.df.row,]$last            <- last
-                current.df[current.df.row,]$hrs             <- final.hr
-                current.df[current.df.row,]$complete        <- complete
+                current.row <- which(current.df$run.id == run.id)[1]
+                current.df[current.row,]$condition       <- cond.idx
+                current.df[current.row,]$run.id          <- run.id
+                current.df[current.row,]$coop.freq.mean  <- mean.freq
+                current.df[current.row,]$coop.freq.sd    <- sd.freq
+                current.df[current.row,]$timepoints.used <- used
+                current.df[current.row,]$last            <- last
+                current.df[current.row,]$hrs             <- final.hr
+                current.df[current.row,]$complete        <- complete
             }
         }
         n.cols <- 0
@@ -707,7 +714,9 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
     }
     cat("\n")
     res <- res[1:(row.idx-1),]
-    current.df <- current.df[-remove.rows,]
+    if (!is.null(remove.rows)) {
+        current.df <- current.df[-remove.rows,]
+    }
     current.df <- rbind(current.df, res)
     current.df
 }
