@@ -26,7 +26,7 @@ xlab.dist <- 2.7
 ylab.dist <- 3.6
 axis.cex <- 1.2
 pch.cex <- 1.5
-fit.col <- "darkorange"
+fit.col <- "black"
 
 metapop.process <- function(path, nrows=-1) {
     if (is.na(file.info(path)$size)) {
@@ -152,6 +152,10 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
         }
     } else {
         y.range <- c(passed.ylim[1], passed.ylim[2])
+        if (y.range[2] == 0) {
+            cat("y min = 0, setting to 1...\n")
+            y.range[2] <- 1
+        }
     }
 
     log.hrs <- hrs+1
@@ -349,7 +353,8 @@ release.test <- function(folder, max.release=1e6, A=7, max.r=log(2), lag=100,
                          ts.scale=200) 
 {
     res <- data.frame()
-    for (dat.file in list.files(folder, full.names=TRUE)) {
+    for (dat.file in list.files(folder, full.names=TRUE, include.dirs=FALSE))
+    {
         release.rate <- as.numeric(sub(".*release=(.*?)_.*",
                                        "\\1", dat.file, perl=TRUE))
         cat("release rate =", release.rate,"\n")
@@ -463,6 +468,40 @@ plot.growth.vs.release <- function(dat, max.release, device="x11",
     print(confint(fit))
 }
 
+plot.survival.freqs <- function(dat, device="x11", name) {
+    graphics.off()
+    min.val <- 0
+    max.val <- 100
+    spacing <- 0
+    survival.cutoff <- 0.1
+
+    h <- hist(dat$coop.freq.mean, breaks=seq(0,1,0.1), plot=FALSE)
+    str(h)
+    freqs <- 100 * h$counts / sum(h$counts)
+    error.counts <- sqrt(h$counts)
+    error.freqs <- (freqs/h$counts) * error.counts
+    error.freqs[freqs<min.val] <- NA
+    freqs.upper <- freqs + 2*error.freqs
+    freqs.lower <- freqs - 2*error.freqs
+    freqs.lower[freqs.lower<=0] <- min.val
+
+    freqs[freqs<min.val] <- min.val
+    default.plot(h=10,w=20,device=device,name=name)
+    bp <- barplot(freqs, log="", names.arg=h$mids, axes=FALSE, ann=FALSE,
+                  axisnames=FALSE, space=spacing, ylim=c(min.val,max.val))
+    arrows(bp, freqs.lower, bp, freqs.upper, code=3, length=0.1, angle=90)
+    axis(1, lwd=par()$lwd, cex.axis=1.5, at=bp, labels=h$mids)
+    axis(2, lwd=par()$lwd, las=2, cex.axis=1.5)
+    box()
+    mtext(side=1, text="Cooperator frequency (midpoint of bin)",
+          line=3.0, cex=3.5)
+    mtext(side=2, text="Occurrence (%)", line=4, cex=3.5)
+    abline(v=survival.cutoff*10+(spacing*1.5), lty=2, col="red", lwd=5)
+    title(name)
+
+    if (device != "x11") dev.off()
+}
+
 plot.survival.prob <- function(dat,device="x11", p, k, x,
                                name="survival_prob_vs_release", ...)
 {
@@ -470,7 +509,7 @@ plot.survival.prob <- function(dat,device="x11", p, k, x,
     graphics.off()
     default.plot(w=square.plot.dim,h=square.plot.dim,device=device,name=name)
     plot(survival.prob~release.rate, data=agg.dat, ann=FALSE, axes=FALSE,
-         cex=pch.cex, type="n", log="x",  ...)
+         cex=pch.cex, subset=survival.prob>0, type="n", log="x",  ...)
     #axis(1,lwd=par()$lwd)
     log.axis(1,lwd=par()$lwd, cex.axis=axis.cex)
     axis(2,lwd=par()$lwd, las=2, cex.axis=axis.cex)
@@ -479,16 +518,21 @@ plot.survival.prob <- function(dat,device="x11", p, k, x,
     points(survival.prob~release.rate, data=agg.dat, cex=pch.cex, ...)
     box()
 
-    fit <- nls(survival.prob~(p*(release.rate-x))/ (k+(release.rate-x)),
-               data=dat, start=list(p=p,k=k,x=x), subset=survival.prob>0 )
+    fit <- nls(survival.prob~(p*(release.rate-x)) / (k+(release.rate-x)),
+               data=agg.dat, subset=survival.prob>0.001, start=list(p=p,k=k,x=x))
 
     p.max <- coef(fit)['p']
     k.survive <- coef(fit)['k']
     x.shift <- coef(fit)['x']
-
-    curve((p.max*(x-x.shift))/(k.survive+(x-x.shift)),
-          add=TRUE, from=x.shift, to=as.list(match.call()$xlim)[[3]],
-          col=fit.col, lty=2, lwd=5)
+    if (x.shift <= 0) x.start <- .01 else x.start <- x.shift
+    x.end <- match.call()$xlim
+    if (!is.null(x.end)) {
+        x.end <- as.list(x.end)[[3]]
+    } else {
+        x.end <- max(agg.dat$release.rate)
+    }
+    
+    curve((p.max*(x-x.shift))/(k.survive+(x-x.shift)), add=TRUE, from=x.start, to=x.end, col=fit.col, lty=2, lwd=5)
 
     print(fit)
     print(confint(fit))
@@ -533,6 +577,7 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
     row.idx <- 1
     n.cols <- 0
     col.names <- ""
+    remove.rows <- NULL
     for (condition in conditions) {
         #if (cond.idx!=158) { cond.idx <- cond.idx+1; next }
         runs <- list.files(condition, full.names=TRUE)
@@ -548,12 +593,40 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
         cat(cond.idx, "of", n.conditions, "conditions\n")
         cat(length(runs), "runs in folder\n")
 
+        adding <- FALSE
+        updating <- FALSE
+        current.df.row <- NULL
         for (j in seq_along(runs)) {
+            run.id <- basename(runs[j])
+            matching.id.rows <- which(current.df$run.id==run.id)
+            current.df.row <- current.df[matching.id.rows,]
+            if (nrow(current.df.row)==0 || is.null(current.df.row)) {
+                cat("adding", run.id, "\n")
+                adding <- TRUE
+            } else if (nrow(current.df.row) == 1) {
+                if (current.df.row$complete) {
+                    cat(run.id, "exists, skipping.\n")
+                    next
+                } else {
+                    cat("updating", run.id, ".\n")
+                    updating <- TRUE
+                }
+            } else {
+                cat("id ", run.id, " has multiple entries...\n")
+                if (any(current.df.row$complete)) {
+                    remove.rows <- 
+                        c(remove.rows, 
+                          matching.id.rows[!current.df.row$complete])
+                    next
+                } else {
+                    remove.rows <- c(remove.rows, matching.id.rows[-1])
+                }
+            }
+
             res[row.idx, names(var.list)] <- lapply(var.list,
                                                     function(x) x[cond.idx])
 
             timepoints  <- list.files(runs[j], full.names=TRUE)
-            run.id <- basename(runs[j])
 
             info.file <- subset(timepoints, grepl(INFO_FILE, timepoints))
             if (length(info.file)==0) {
@@ -561,31 +634,19 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                 next
             }
             info <- parse.infofile(info.file)
+
             timepoints <- subset(timepoints, !grepl(INFO_FILE, timepoints))
             n.timepoints <- length(timepoints)
+            if (n.timepoints == 1) {
+                cat("\n\tonly one file found in run", run.id, "\n")
+                next
+            }
 
             all.timepoints <- as.numeric(sub(name.match,"\\1", timepoints,
                                              perl=TRUE))
             all.hrs <- sort(all.timepoints/info$ts.scale)
             final.hr <- all.hrs[length(all.hrs)]
             timepoints.ordered <- timepoints[order(all.timepoints)]
-
-
-            if (run.id %in% current.df$run.id) {
-                if (current.df[current.df$run.id==run.id,]$complete) {
-                    cat(run.id, "exists, skipping.\n")
-                    next
-                } else {
-                    cat("updating", run.id, ".\n")
-                }
-            } else {
-                cat("adding", run.id, "\n")
-            }
-
-            if (n.timepoints == 1) {
-                cat("\n\tonly one file found in run", run.id, "\n")
-                next
-            }
 
             if (j==1) {
                 a.run <-metapop.process(timepoints[1], info$size)$summary
@@ -625,16 +686,27 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
 
             mean.freq <- mean(coop.freqs)
             sd.freq   <- ifelse(length(coop.freqs)==1, 0, sd(coop.freqs))
-
-            res[row.idx,]$condition       <- cond.idx
-            res[row.idx,]$run.id          <- run.id
-            res[row.idx,]$coop.freq.mean  <- mean.freq
-            res[row.idx,]$coop.freq.sd    <- sd.freq
-            res[row.idx,]$timepoints.used <- used
-            res[row.idx,]$last            <- last
-            res[row.idx,]$hrs             <- final.hr
-            res[row.idx,]$complete        <- complete
-            row.idx <- row.idx+1
+            if (adding) {
+                res[row.idx,]$condition       <- cond.idx
+                res[row.idx,]$run.id          <- run.id
+                res[row.idx,]$coop.freq.mean  <- mean.freq
+                res[row.idx,]$coop.freq.sd    <- sd.freq
+                res[row.idx,]$timepoints.used <- used
+                res[row.idx,]$last            <- last
+                res[row.idx,]$hrs             <- final.hr
+                res[row.idx,]$complete        <- complete
+                row.idx <- row.idx+1
+            } else if (updating) {
+                current.row <- which(current.df$run.id == run.id)[1]
+                current.df[current.row,]$condition       <- cond.idx
+                current.df[current.row,]$run.id          <- run.id
+                current.df[current.row,]$coop.freq.mean  <- mean.freq
+                current.df[current.row,]$coop.freq.sd    <- sd.freq
+                current.df[current.row,]$timepoints.used <- used
+                current.df[current.row,]$last            <- last
+                current.df[current.row,]$hrs             <- final.hr
+                current.df[current.row,]$complete        <- complete
+            }
         }
         n.cols <- 0
         col.names <- ""
@@ -642,11 +714,14 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
     }
     cat("\n")
     res <- res[1:(row.idx-1),]
+    if (!is.null(remove.rows)) {
+        current.df <- current.df[-remove.rows,]
+    }
     current.df <- rbind(current.df, res)
     current.df
 }
 
-plot.summary <- function(dat, device="x11", save.to, jit=NULL, gap=2, 
+plot.summary <- function(dat, device="x11", save.to=NULL, jit=NULL, gap=2, 
                          leg.x=1, leg.y=0.8, min.hr=2e4, ...)
 {
     graphics.off()
@@ -681,9 +756,13 @@ plot.summary <- function(dat, device="x11", save.to, jit=NULL, gap=2,
         for (mig.range.occ in split(mig.range, mig.range$occ)) {
             plot.name <- paste(unique(mig.range.occ$range), ", ",
                                "occ=", unique(mig.range.occ$occ), sep="")
-            plot.path <- file.path(save.to, plot.name)
-            if (!file.exists(save.to)) dir.create(save.to, recursive=TRUE)
-            default.plot(w=long.plot.dim,h=square.plot.dim, dev=device, name=plot.path)
+            plot.path <- NULL
+            if (device != "x11") {
+                plot.path <- file.path(save.to, plot.name)
+                if (!file.exists(save.to)) dir.create(save.to, recursive=TRUE)
+            }
+            default.plot(w=long.plot.dim,h=square.plot.dim, dev=device, 
+                         name=plot.path)
             plot(x.range, y.range, type="n", ann=FALSE, axes=FALSE, log="",
                  xaxs='i')
             title(main=plot.name,cex.main=1)
