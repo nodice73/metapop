@@ -567,7 +567,8 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
     var.list <- make.var.list(conditions)
 
     res.names <- c(names(var.list), "condition", "run.id", "coop.freq.mean",
-                   "coop.freq.sd", "timepoints.used", "last", "complete")
+                   "coop.freq.sd", "coop.size.mean", "coop.size.sd", 
+                   "timepoints.used", "last", "complete")
 
     res <- data.frame(matrix(0, nrow=n.conditions*max.runs,
                              ncol=length(res.names)))
@@ -575,8 +576,6 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
 
     cond.idx <- 1
     row.idx <- 1
-    n.cols <- 0
-    col.names <- ""
     remove.rows <- NULL
     for (condition in conditions) {
         #if (cond.idx!=158) { cond.idx <- cond.idx+1; next }
@@ -648,20 +647,23 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
             final.hr <- all.hrs[length(all.hrs)]
             timepoints.ordered <- timepoints[order(all.timepoints)]
 
-            if (j==1) {
-                a.run <-metapop.process(timepoints[1], info$size)$summary
-
-                n.cols <- ncol(a.run)
-                col.names <- names(a.run)
-            }
-
             used <- 0
             coop.freqs <- vector("numeric", last)
+            coop.sizes  <- vector("numeric", last)
             lasts <- tail(timepoints.ordered, last)
             for (i in rev(seq_along(lasts))) {
-                tryCatch(coop.freqs[i] <- 
-                    metapop.process(lasts[i], info$size)$summary$coop.freq,
-                    error=function(e) { cat("skipping\n") })
+                tryCatch(
+                    {
+                        run.summary <- 
+                            metapop.process(lasts[i], info$size)$summary
+                        coop.freqs[i] <- run.summary$coop.freq
+                        coop.sizes[i] <- run.summary$coops
+                    }, 
+                    error=function(e) {
+                        cat("skipping\n")
+                        next
+                    }
+                )
 
                 used <- used + 1
 
@@ -684,13 +686,17 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                 cat(run.id, "appears incomplete\n")
             }
 
-            mean.freq <- mean(coop.freqs)
-            sd.freq   <- ifelse(length(coop.freqs)==1, 0, sd(coop.freqs))
+            freq.mean <- mean(coop.freqs)
+            freq.sd   <- ifelse(length(coop.freqs)==1, 0, sd(coop.freqs))
+            size.mean <- mean(coop.sizes)
+            size.sd   <- ifelse(length(coop.sizes)==1, 0, sd(coop.sizes))
             if (adding) {
                 res[row.idx,]$condition       <- cond.idx
                 res[row.idx,]$run.id          <- run.id
-                res[row.idx,]$coop.freq.mean  <- mean.freq
-                res[row.idx,]$coop.freq.sd    <- sd.freq
+                res[row.idx,]$coop.freq.mean  <- freq.mean
+                res[row.idx,]$coop.freq.sd    <- freq.sd
+                res[row.idx,]$coop.size.mean  <- size.mean
+                res[row.idx,]$coop.size.sd    <- size.sd
                 res[row.idx,]$timepoints.used <- used
                 res[row.idx,]$last            <- last
                 res[row.idx,]$hrs             <- final.hr
@@ -700,16 +706,16 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                 current.row <- which(current.df$run.id == run.id)[1]
                 current.df[current.row,]$condition       <- cond.idx
                 current.df[current.row,]$run.id          <- run.id
-                current.df[current.row,]$coop.freq.mean  <- mean.freq
-                current.df[current.row,]$coop.freq.sd    <- sd.freq
+                current.df[current.row,]$coop.freq.mean  <- freq.mean
+                current.df[current.row,]$coop.freq.sd    <- freq.sd
+                current.df[current.row,]$coop.size.mean  <- size.mean
+                current.df[current.row,]$coop.size.sd    <- size.sd
                 current.df[current.row,]$timepoints.used <- used
                 current.df[current.row,]$last            <- last
                 current.df[current.row,]$hrs             <- final.hr
                 current.df[current.row,]$complete        <- complete
             }
         }
-        n.cols <- 0
-        col.names <- ""
         cond.idx <- cond.idx + 1
     }
     cat("\n")
