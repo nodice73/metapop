@@ -288,7 +288,7 @@ class AncReleaseTest(ReleaseTest):
     def __init__(self):
         super(AncReleaseTest, self).__init__()
         self.mutant_freqs = [0]
-        self.coop_release = range(1000, 5000, 100)
+        self.coop_release = [x/10.0 for x in range(31, 100, 3)]
         self.output = 'release_test/anc'
 
 class EvoReleaseTest(ReleaseTest):
