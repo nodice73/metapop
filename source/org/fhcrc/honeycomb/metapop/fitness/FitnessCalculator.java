@@ -30,6 +30,7 @@ public abstract class FitnessCalculator {
     abstract public double getMaxGrowthRate();
     abstract public double calculateGrowthRate(double param);
     abstract public double calculateDeathRate(double param);
+    abstract public FitnessCalculator copyFitnessCalculator(double[] params);
 
     @Override
     public String toString() {
