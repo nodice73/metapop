@@ -38,7 +38,7 @@ public class StateSaver {
     private final Saveable saveable;
     private final File data_path;
     private final Map<String, String> initialization_data;
-    private final String headers;
+    private String headers;
 
     public StateSaver(Saveable saveable) {
         this.saveable = saveable;
@@ -51,6 +51,10 @@ public class StateSaver {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void updateHeaders() {
+        this.headers = this.saveable.getHeaders();
     }
 
     public void writeInitializationData() throws IOException {
