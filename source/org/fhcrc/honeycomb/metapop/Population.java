@@ -256,17 +256,20 @@ public class Population {
                     "\npop:\n" + this +
                     "\node:\n" + ode.toString();
                 throw new RuntimeException(fail);
+
             } else if (resource < 0) {
                 removeResidualResource();
             }
             for (Subpopulation subpop:subpopulations) {
                 int births = subpop.getBirths(resource);
                 int deaths = subpop.getDeaths(resource);
+
                 subpop.setSize(subpop.getSize() + births - deaths);
             }
         } else {
             for (Subpopulation subpop:subpopulations) {
                 int deaths = subpop.getDeaths(resource);
+
                 subpop.setSize(subpop.getSize() - deaths);
             }
         }
@@ -323,6 +326,7 @@ public class Population {
             if (res_sub == null) {
                 subpopulations.add(new Subpopulation(in_sub));
                 n_subpopulations += 1;
+                size_by_id.put(in_sub.getId(), in_sub.getSize());
             } else {
                 res_sub.setSize(res_sub.getSize() + in_sub.getSize());
             }
@@ -336,6 +340,17 @@ public class Population {
      */
     public void setCoordinate(Coordinate coord) {
         this.coordinate = coord;
+    }
+
+    /**
+     *adds a Subpopulation. 
+     *
+     *@param new_sub the Subpopulation to be added.
+    */
+    public void addNewSubpopulation(Subpopulation new_sub) {
+        subpopulations.add(new Subpopulation(new_sub));
+        this.n_subpopulations++;
+        size_by_id.put(new_sub.getId(), new_sub.getSize());
     }
 
     /** 
@@ -354,6 +369,35 @@ public class Population {
         return null;
     }
 
+    //Returns a list of subpopulations with type "coop" or "cheat".
+    public List<Subpopulation> getSubpopsByType(String type) {
+        List<Subpopulation> subpops = new ArrayList<Subpopulation>();
+        for (Subpopulation subpop:subpopulations) {
+            String id = subpop.getId();
+            String sub_type = id.substring(0, id.indexOf('_'));
+            if (sub_type.equals(type)) {
+                subpops.add(subpop);
+            }
+        }
+        return subpops;
+    }
+
+    //Returns the total size of all subpopulations with type "coop" or "cheat".
+    public int getSizeByType(String type) {
+        List<Subpopulation> subpops = new ArrayList<Subpopulation>();
+        for (Subpopulation subpop:subpopulations) {
+            String id = subpop.getId();
+            String sub_type = id.substring(0, id.indexOf('_'));
+            if (sub_type.equals(type)) {
+                subpops.add(subpop);
+            }
+        }
+        int total = 0;
+        for (Subpopulation subpop:subpops) {
+            total += subpop.getSize();
+        }
+        return total;
+    }
     /**
      * returns the size of all {@link Subpopulation}(s) with the given Id.
      * Returns zero if the id is not found.
