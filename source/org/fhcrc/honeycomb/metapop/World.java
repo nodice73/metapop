@@ -37,6 +37,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
 
 /** 
  * Manages {@code Population}s.
@@ -190,17 +192,18 @@ public class World implements StepProvider, Saveable {
 
     private void makeHeaders() {
         StringBuilder tmp = new StringBuilder();
-        List<Subpopulation> subpops = 
-            initial_populations.get(0).getSubpopulations();
-
         for (String header:const_headers) {
             tmp.append(header).append("\t");
         }
-
-        for (Subpopulation sub:subpops) {
-            String id = sub.getId();
-            subpop_ids.add(id);
-            tmp.append(sub.getId()).append("\t");
+        for (Population pop:occupied_locations.getList()) {
+            for (Subpopulation sub:pop.getSubpopulations()) {
+                if (!subpop_ids.contains(sub.getId())) {
+                    subpop_ids.add(sub.getId());
+                }
+            }
+        }
+        for (String id:subpop_ids) {
+            tmp.append(id).append("\t");
         }
         tmp.deleteCharAt(tmp.lastIndexOf("\t"));
         headers = tmp.toString();
@@ -226,6 +229,23 @@ public class World implements StepProvider, Saveable {
         int total = 0;
         for (Population pop:occupied_locations.getList()) {
             total += pop.getSizeById(id);
+        }
+        return total;
+    }
+
+    //Returns sizes for all subpopulations of a type "coop" or "cheat".
+    public int getSizeByType(String type) {
+        int total = 0;
+        Set<String> ids = new HashSet<String>();
+        for (Population pop:occupied_locations.getList()) {
+            for (Subpopulation subpop:pop.getSubpopulations()) {
+                String id = subpop.getId();
+                String sub_type = id.substring(0, id.indexOf("_"));
+                if (sub_type.equals(type)) {
+                    total += pop.getSizeById(id);
+                    ids.add(id);
+                }
+            }
         }
         return total;
     }
@@ -324,6 +344,8 @@ public class World implements StepProvider, Saveable {
     }
 
     protected void saveState() {
+	this.makeHeaders();
+	ss.updateHeaders();
         try {
             ss.saveState();
         } catch (IOException e) {
