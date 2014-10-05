@@ -43,4 +43,9 @@ public class SpecifiedCalculator extends FitnessCalculator {
 
     @Override
     public double calculateDeathRate(double param) { return death_rate; }
+
+    @Override
+    public FitnessCalculator copyFitnessCalculator(double[] params) {
+        return new SpecifiedCalculator(this.growth_rate*params[1], this.death_rate*params[2]);
+    }
 }
