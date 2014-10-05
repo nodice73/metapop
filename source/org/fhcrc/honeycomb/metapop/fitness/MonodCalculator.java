@@ -42,6 +42,14 @@ public class MonodCalculator extends FitnessCalculator {
     }
 
     @Override
+    public FitnessCalculator copyFitnessCalculator(double[] params) {
+        double vmax_new = (this.vmax - this.d) * params[0];
+        double km_new = this.km*params[1];
+        double d_new = this.d*params[2];
+        return new MonodCalculator(vmax_new, km_new, this.d);
+    }
+
+    @Override
     public double getMaxGrowthRate() { return vmax; }
 
     @Override
@@ -59,4 +67,13 @@ public class MonodCalculator extends FitnessCalculator {
         return String.format("%s, Vmax=%.3e, Km=%.3e, d=%.3e",
                              super.toString(), vmax, km, d);
     }
+
+    public boolean equals(MonodCalculator fc) {
+        if (this.vmax == fc.vmax && this.km == fc.km && this.d == fc.d) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
 }
