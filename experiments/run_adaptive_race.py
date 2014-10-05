@@ -45,7 +45,7 @@ class AdaptiveRaceParams(object):
         self.package = 'org.fhcrc.honeycomb.metapop.experiment'
         self.time = '8-0'
 
-        self.program = "NoDilutionAR"
+        self.program = "NoDilutionMutationAR"
 
         self.n_seeds = 5
         self.seeds = []
@@ -53,12 +53,14 @@ class AdaptiveRaceParams(object):
 
         self.migration_ranges = ['global', 'local']
         self.migration_type = ['indv']
+        self.mutation_type = ['indv']
         self.coop_freq = [0.5]
         self.initial_pop_size = [1e5]
         self.mutant_freqs = [0, 2e-5, 2e-4, 2e-3]
         self.frac_occupied = [0.25, 0.5, 0.75, 1]
-        self.coop_to_cheat = [0] 
+        self.coop_to_cheat = [1e-8] 
         self.cheat_to_coop = [0]
+        self.mut_rate = [1e-10]
         self.migration_rates = [0] + [10**-y for y in reversed(range(4,13))]
 
         self.base_km = [10]
@@ -72,7 +74,7 @@ class AdaptiveRaceParams(object):
         self.initial_resource = [0.0]
         self.size = [12]
         self.hours = [20000]
-        self.save_every = [100]
+        self.save_every = [10]
         self.randomize = False
         self.output = ''
 
@@ -97,8 +99,7 @@ class AdaptiveRaceParams(object):
             self.sbatch = ("sbatch --mem={} -n1 -t{} "
                            "--wrap='".format(self.mem2, self.time))
             self.end = "'"
-            self.save_base = ('/home/ajwaite/shougroup/lab_users/Adam/'
-                              'metapop_results')
+            self.save_base = ('metapop_results_mutation')
 
 
     def make_params(self):
@@ -131,7 +132,7 @@ class AdaptiveRaceParams(object):
                         print ("queue is {}. {} of {} jobs sent."
                                " Sleeping...".format(queue, sent, n_runs))
                         sys.stdout.flush()
-                        sleep(10)
+                        sleep(60)
                     else:
                         break
 
@@ -153,30 +154,31 @@ class AdaptiveRaceParams(object):
         args = list(list(i) for i in product(
                                              params['migration_ranges'], #0
                                              params['migration_type'],   #1
-                                             params['initial_pop_size'], #2
-                                             params['mutant_freqs'],     #3
-                                             params['coop_release'],     #4
-                                             params['amount_needed'],    #5
-                                             params['coop_freq'],        #6
-                                             params['base_km'],          #7
-                                             params['cheat_adv'],        #8
-                                             params['evo_km_adv'],       #9
-                                             params['evo_death_adv'],    #10
-                                             params['evo_trade'],        #11
-                                             params['initial_resource'], #12
-                                             params['size'],             #13
-                                             params['frac_occupied'],    #14
-                                             params['migration_rates'],  #15
-                                             params['coop_to_cheat'],    #16
-                                             params['cheat_to_coop']))   #17
+                                             params['mutation_type'],    #2
+                                             params['initial_pop_size'], #3
+                                             params['mutant_freqs'],     #4
+                                             params['coop_release'],     #5
+                                             params['amount_needed'],    #6
+                                             params['coop_freq'],        #7
+                                             params['base_km'],          #8
+                                             params['cheat_adv'],        #9
+                                             params['evo_km_adv'],       #10
+                                             params['evo_death_adv'],    #11
+                                             params['evo_trade'],        #12
+                                             params['initial_resource'], #13
+                                             params['size'],             #14
+                                             params['frac_occupied'],    #15
+                                             params['migration_rates'],  #16
+                                             params['coop_to_cheat'],    #17
+                                             params['cheat_to_coop'],    #18
+                                             params['mut_rate']))        #19
 
         output = self.output
         if output == '': output = self.__class__.__name__
         outputs = []
         cmds = []
-        template = '{0}_{1}_n={2}_mutant-freq={3}_mig={15}_coop-release={4}_' \
-                   'km-adv={9}_death-adv={10}_' \
-                   'coop-freq={6}_size={13}_occ={14}_u={17}'
+        template = 'mutant-freq={4}_mut-rate={19}_coop-to-cheat={17}_' \
+                   'mig={16}_occ={15}' 
 
         for arg in args:
             seeds = []
@@ -189,8 +191,7 @@ class AdaptiveRaceParams(object):
 
             cmds.append(arg + [str(self.randomize)] + seeds +
                         params['hours'] + params['save_every'])
-            out_string = (template.format(*arg) + 
-                          '_hrs={}'.format(params['hours'][0]))
+            out_string = (template.format(*arg))
             outputs.append(os.path.join(self.save_base, output,
                            out_string))
 
@@ -200,7 +201,7 @@ class AdaptiveRaceParams(object):
 
 
 def check_queue():
-    squeue = 'squeue -u ajwaite | wc -l'
+    squeue = 'squeue -u ccannist | wc -l'
 
     # one line is the header.
     return int(subprocess.check_output(squeue, shell=True).rstrip('\n')) - 1
@@ -225,8 +226,44 @@ class AdaptiveRace(AdaptiveRaceParams):
 class NoMut(AdaptiveRace):
     def __init__(self):
         super(NoMut, self).__init__()
-        self.migration_rates = [1e-8]
-        self.mutant_freqs = [0]
+        self.mutant_freqs = [0];
+        self.coop_to_cheat = [0];
+        self.mut_rate = [0];
+        self.frac_occupied = [0.5, 1];
+
+class NodeTest(AdaptiveRace):
+    def __init__(self):
+        super(NodeTest, self).__init__()
+        self.migration_rates = [0];
+        self.mutant_freqs = [0];
+        self.coop_to_cheat = [0];
+        self.mut_rate = [0];
+        self.frac_occupied = [0.1];
+        self.hours = [100];
+        self.save_every = [100];
+
+class TwoMut(AdaptiveRace):
+    def __init__(self):
+        super(TwoMut, self).__init__()
+        self.migration_rates = [1e-8];
+        self.mutant_freqs = [0.00004];
+        self.coop_to_cheat = [1e-10];
+
+class MutAssay(AdaptiveRace):
+    def __init__(self):
+        super(MutAssay, self).__init__()
+        self.mut_rate = [0];
+        self.coop_to_cheat = [1e-7];
+        self.mutant_freqs = [0];
+        self.frac_occupied = [0.5, 0.9, 1];
+
+class MutateAll(AdaptiveRace):
+    def __init__(self):
+        super(MutateAll, self).__init__()
+        self.migration_rates = [1e-8];
+        self.mutant_freqs = [4e-5];
+        self.mutation_type = ['all'];
+
 
 class LowOcc(AdaptiveRace):
     def __init__(self):
@@ -281,14 +318,12 @@ class ReleaseTest(AdaptiveRaceParams):
         self.save_every = [1]
         self.coop_freq = [1]
         self.coop_release = ([x + y/20.0 for x in range (0,3) 
-                                for y in range(0,20)] + range(3,100) +
-                                range(120, 1000, 20))
+                                for y in range(0,20)] + range(3,100))
 
 class AncReleaseTest(ReleaseTest):
     def __init__(self):
         super(AncReleaseTest, self).__init__()
         self.mutant_freqs = [0]
-        self.coop_release = [x/10.0 for x in range(31, 100, 3)]
         self.output = 'release_test/anc'
 
 class EvoReleaseTest(ReleaseTest):
@@ -302,12 +337,12 @@ class Test(AdaptiveRaceParams):
         super(Test, self).__init__()
         self.migration_ranges = ['global']
         self.mutant_freqs = [2e-5]
-        self.migration_rates = [0]
-        self.frac_occupied = [0.5]
-        #self.seeds = [str(i) for i in '1'*self.n_seeds]
-        self.save_every = [1]
-        self.hours = [1000]
-
+        self.migration_rates = [1e-7]
+        self.frac_occupied = [0.25]
+        self.initial_resource = [0.0]
+        self.coop_to_cheat = [0.0]
+        self.seeds = [str(i) for i in '1'*self.n_seeds]
+        self.save_every = [10]
 
 class Benchmark(AdaptiveRaceParams):
     def __init__(self):
@@ -327,13 +362,16 @@ class Benchmark(AdaptiveRaceParams):
 if __name__ == "__main__":
     #ps = Benchmark()
     #ps = Test()
-    ps = AncReleaseTest()
-    #ps = EvoReleaseTest()
+    #ps = AncReleaseTest()
     #ps = AdaptiveRace()
+    #ps = CoopToCheat()
+    #ps = LongRunning2()
+    #ps = PeriodicDilution99_1e3()
     #ps = NoMut()
     #ps = LowRelease()
     #ps = VeryLowRelease()
+    #ps = CheaterTitration()
     #ps = LowOcc()
-    #ps = HighOcc()
-    #ps.test(30)
-    ps.run(1)
+    nm = MutAssay()
+    #ps.test(1)
+    nm.run(1)
