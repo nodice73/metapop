@@ -37,4 +37,10 @@ public class IdentityCalculator extends FitnessCalculator {
 
     @Override
     public double calculateDeathRate(double param) { return param; }
+
+    @Override
+    public FitnessCalculator copyFitnessCalculator(double[] params) {
+    	throw new UnsupportedOperationException();
+    }
+    
 }
