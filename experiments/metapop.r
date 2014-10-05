@@ -16,7 +16,8 @@
 # along with metapop.  If not, see <http://www.gnu.org/licenses/>.
 
 
-source("~/Documents/Code/R/utilities/default_plot.r")
+source("default_plot.r")
+source("logaxis.r")
 
 INFO_FILE <- "world_info.txt"
 square.plot.dim <- 12
@@ -26,7 +27,7 @@ xlab.dist <- 2.7
 ylab.dist <- 3.6
 axis.cex <- 1.2
 pch.cex <- 1.5
-fit.col <- "black"
+fit.col <- "darkorange"
 
 metapop.process <- function(path, nrows=-1) {
     if (is.na(file.info(path)$size)) {
@@ -40,10 +41,10 @@ metapop.process <- function(path, nrows=-1) {
 
     dat <- read.delim(path, stringsAsFactors=FALSE, nrows=nrows)
     dat[is.na(dat)] <- 0
-    dat <- within(dat, coops <- anc_coop + evo_coop)
-    dat <- within(dat, cheats <- anc_cheat + evo_cheat)
-    coop.cols  <- grep("_coop", names(dat))
-    cheat.cols <- grep("_cheat", names(dat))
+    dat <- within(dat, coops <- rowSums(dat[grep("coop_", names(dat))]))
+    dat <- within(dat, cheats <- rowSums(dat[grep("cheat_", names(dat))]))
+    coop.cols  <- grep("coop_", names(dat))
+    cheat.cols <- grep("cheat_", names(dat))
     coop.sum.col  <- grep("coop", names(dat))
     cheat.sum.col <- grep("cheat", names(dat))
     resource.col <- grep("resource", names(dat))
@@ -58,17 +59,19 @@ metapop.process <- function(path, nrows=-1) {
          cheat.cols=cheat.cols)
 }
 
-plot.folder <- function(folder, save.path, run.pattern, device="png", 
-                        skip.completed=FALSE, ...)
+plot.folder <- function(folder, save.path, run.pattern, device="png", plot.all=FALSE, 
+                        plot.two.types=FALSE, skip.completed=FALSE, ...)
 {
     if (missing(save.path)) {
         save.folder <- ifelse(grepl("^/", folder), substring(folder,2), folder)
         save.path <- file.path("fig", save.folder)
     }
+    print("Save path created: ")
+    print(save.path)
     if (!file.exists(save.path)) dir.create(save.path, recursive=TRUE)
 
     folders <- list.files(folder, full.names=TRUE)
-    folders <- subset(folders, grepl("global|local", folders))
+    #folders <- subset(folders, grepl("global|local", folders))
     
     runs <- if (missing(run.pattern)) {
         # only taking first run if multiple reps are present.
@@ -76,13 +79,25 @@ plot.folder <- function(folder, save.path, run.pattern, device="png",
     } else {
         list.files(folders, full.names=TRUE, pattern=run.pattern)
     }
-    n.runs <- length(do.call("rbind",runs))
-
+    n.runs <- 0
+    i <- 1
+    while (i <= length(runs)) {
+        n.runs <- n.runs + length(runs[[i]])
+        if (length(runs[[i]]) == 0) {
+          runs[[i]] <- NULL
+        } else {
+           i <- i + 1
+        }
+    }
+    print("Run pattern created")
     res <- data.frame()
     cnt <- 1
-
     plotted <- list.files(save.path)
     for (cond in runs) {
+        breaks <- which(strsplit(cond[1], "")[[1]]=="/")
+        cond.path <- substr(cond[1], breaks[length(breaks)-1]+1, breaks[length(breaks)]-1)
+        cond.full.path <- paste(save.path, "/", cond.path, sep="")
+        if (!file.exists(cond.full.path)) dir.create(cond.full.path, recursive=TRUE)
         for (run in cond) {
             cat(cnt, "of", n.runs, "\n")
 
@@ -95,11 +110,16 @@ plot.folder <- function(folder, save.path, run.pattern, device="png",
             }
             
             formals(plot.timepoints) <- c(list(folder=run, device=device,
-                                               save.path=save.path,
+                                               save.path=cond.full.path,
+                                               plot.all=plot.all,
                                                save.movie=FALSE,
+                                               plot.two.types=plot.two.types,
                                                row.col="all",
                                                show.resource=FALSE,
-                                               plot.type="cell"),
+                                               plot.type="cell",
+                                               write.data=FALSE,
+                                               data.ext="tab",
+                                               ylim=c(1e-2, 1e6)), 
                                                list(...))
             res <- rbind(res, plot.timepoints())
             cnt <- cnt+1
@@ -110,13 +130,13 @@ plot.folder <- function(folder, save.path, run.pattern, device="png",
 
 plot.timepoints <- function(folder, data.ext="tab", device="x11",
                             save.path, row.col="all", plot.type="cell",
-                            save.movie=FALSE, write.data=FALSE, 
-                            show.resource=FALSE, rsample, xlim,
+                            save.movie=FALSE, write.data=FALSE, plot.two.types=FALSE,
+                            show.resource=FALSE, plot.all=FALSE, rsample, xlim,
                             ylim=c(1e-2,1e6))
 {
     graphics.off()
     if (is.na(folder)) stop("Folder is NA!")
-
+    if (plot.all) ylim=c(1e-2, 1e8)
     save.path <- ifelse(device != "x11" || save.movie,
                         save.to(data.folder=folder, save.path), "")
     movie.folder <- file.path(save.path,"movie")
@@ -131,8 +151,6 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
 
     timepoints <- files$timepoints/info$ts.scale
     world.size <- info$rows * info$cols
-
-
     passed.xlim <- eval(match.call()$xlim)
     hrs <- if (is.null(passed.xlim)) {
         passed.xlim <- range(timepoints)
@@ -152,10 +170,6 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
         }
     } else {
         y.range <- c(passed.ylim[1], passed.ylim[2])
-        if (y.range[2] == 0) {
-            cat("y min = 0, setting to 1...\n")
-            y.range[2] <- 1
-        }
     }
 
     log.hrs <- hrs+1
@@ -197,6 +211,8 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
     title.name <- run.id
     plot.name <- paste0(title.name, "_", row.col, "_",
                         passed.xlim[1], "-", passed.xlim[2])
+    if (plot.all) {plot.name <- paste0(plot.name, "-all")}
+    if (plot.two.types) {plot.name <- paste0(plot.name, "-coopcheat")}
     if (!identical(row.col, "none")) {
         default.plot(w=square.plot.dim, h=square.plot.dim, device,
                      file.path(save.path,plot.name))
@@ -208,8 +224,9 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
         box(lwd=par()$lwd)
     }
 
-    color <- list(anc_coop = "red", anc_cheat = "blue", evo_coop = "magenta",
-                  evo_cheat = "cyan", coops="red", cheats="blue")
+    #color <- list(indiv.coops=hsv(0, 1, c(0.9, 0.7, 0.5, 0.3, 0.1)), indiv.cheats=hsv(0.65, 1, c(0.9, 0.7, 0.5, 0.3, 0.1)), coops="red", cheats="blue")
+    color <- list(indiv.coops=hsv(c(0, 0.95, 0.9, 0.85, 0.8), 1, c(1, 0.9, 0.8, 0.7, 0.6)), indiv.cheats=hsv(c(0.6, 0.55, 0.4, 0.35, 0.3), 1, c(1, 0.9, 0.8, 0.7, 0.6)), coops="red", cheats="blue")
+    ltype <- list(indiv.coops=c(1:5), indiv.cheats=c(1:5), coops=1, cheats=1)
 
     row.sample <- NULL
     linew <- ifelse(identical(row.col, "all"), 1, 3)
@@ -229,7 +246,8 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
         prev.all    <- metapop.process(f.prev, info$size)
         if (is.null(current.all) || is.null(prev.all)) { next }
 
-        data.cols <- c(prev.all$coop.cols, prev.all$cheat.cols)
+        data.cols <- c(current.all$coop.cols, current.all$cheat.cols)
+        if (plot.two.types) data.cols <- c(data.cols[length(data.cols)]+1, data.cols[length(data.cols)]+2)
 
         if (i==2) {
             if (!is.null(eval(match.call()$rsample))) {
@@ -257,6 +275,8 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
         first <- TRUE
         usr.lim <- 10^par()$usr[3]
         do.plot <- function(pair) {
+            cols.to.use <- data.cols
+            if (plot.all) {cols.to.use <- data.cols - (data.cols[1] - 1)}
             extinct.loc <- 0
             resource <- pair$resource
             if (plot.type=="cell") {
@@ -271,28 +291,79 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
                         lines(timepoint.ss, resource,  lwd=linew)
                     }
                 }
+                type.colors <- rep("null", length(data.cols))
+                type.lines <- rep(0, length(data.cols))
+                type.widths <- rep(linew, length(data.cols))
+                n.coops <- 0
+                n.cheats <- 0
                 for (type in data.cols) {
-                    type.name <- names(pair)[type]
-
-                    if (length(timepoint.ss) != length(pair[[type]]) ||
-                        any(pair[[type]][1]==0))
-                    {
-                        points(timepoint.ss[2], pair[[type]][2], pch=6,
-                               lwd=linew, col=color[[type.name]])
+                    data.index <- type - (data.cols[1]-cols.to.use[1])
+                    type.name <- names(pair)[data.index]
+                    new.type <- type.name %in% new.types
+                    is.coop <- substr(type.name, 1, 4)=="coop"
+                    if (is.coop) {
+                        n.coops <- n.coops + 1
+                        if (n.coops <= length(color$indiv.coops)) {
+                            type.colors[type-data.cols[1]+1] <- color$indiv.coops[n.coops]
+                            type.lines[type-data.cols[1]+1] <- ltype$indiv.coops[n.coops]
+                            type.widths[type-data.cols[1]+1] <- linew + n.coops - 1                            
+                        } else {
+                            type.colors[type-data.cols[1]+1] <- color$coops
+                            type.lines[type-data.cols[1]+1] <- 6
+                            type.widths[type-data.cols[1]+1] <- linew + length(color$indiv.coops) - 1
+                        }
                     } else {
-                        lines(timepoint.ss, pair[[type]],
-                              col=color[[type.name]], lwd=linew)
+                        n.cheats <- n.cheats + 1
+                        if (n.cheats <= length(color$indiv.cheats)) {
+                            type.colors[type-data.cols[1]+1] <- color$indiv.cheats[n.cheats]
+                            type.lines[type-data.cols[1]+1] <- ltype$indiv.cheats[n.cheats]
+                            type.widths[type-data.cols[1]+1] <- linew + n.cheats - 1                            
+                        } else {
+                            type.colors[type-data.cols[1]+1] <- color$cheats
+                            type.lines[type-data.cols[1]+1] <- 6
+                            type.widths[type-data.cols[1]+1] <- linew + length(color$indiv.cheats) - 1                                
+                        }
+
+                    }
+
+                    if (length(timepoint.ss) != length(pair[[data.index]]) ||
+                        any(pair[[data.index]][1]==0))
+                    {
+                        if (new.type) {
+                            points(timepoint.ss[2], pair[[data.index]][2], pch=1,
+                                   lwd=type.widths[type-data.cols[1]+1], 
+                                   col=type.colors[type-data.cols[1]+1], 
+                                   lty=type.lines[type-data.cols[1]+1])
+                        } else {
+                            points(timepoint.ss[2], pair[[data.index]][2], pch=6,
+                                   lwd=type.widths[type-data.cols[1]+1], 
+                                   col=type.colors[type-data.cols[1]+1], 
+                                   lty=type.lines[type-data.cols[1]+1])
+                        }
+                    } else {
+                        lines(timepoint.ss, pair[[data.index]],
+                              col=type.colors[type-data.cols[1]+1], 
+                              lwd=type.widths[type-data.cols[1]+1], 
+                              lty=type.lines[type-data.cols[1]+1])
 
                         # a type in a location just went extinct
-                        if (any(pair[type][1,] != 0 & pair[type][2,] == 0))
+                        if (any(pair[data.index][1,] != 0 & pair[data.index][2,] == 0))
                         {
-                            lines(timepoint.ss, c(pair[[type]][1], 1),
-                                  col=color[[type.name]], lwd=linew)
-                            points(timepoint.ss[2], 1, pch=4, lwd=linew,
-                                   col=color[[type.name]])
+                            lines(timepoint.ss, c(pair[[data.index]][1], 1),
+                                  col=type.colors[type-data.cols[1]+1], 
+                                  lwd=type.widths[type-data.cols[1]+1], 
+                                  lty=type.lines[type-data.cols[1]+1])
+                            points(timepoint.ss[2], 1, pch=4, 
+                                    lwd=type.widths[type-data.cols[1]+1],
+                                   col=type.colors[type-data.cols[1]+1], 
+                                   lty=type.lines[type-data.cols[1]+1])
                             extinct.loc <- extinct.loc + 1
                         }
                     }
+                }
+                type.names <- names(pair)[sort(cols.to.use)]
+                if ((plot.all || pair$row.col[1] == split_paired[[1]]$row.col[1]) && i == 2) {
+                    legend(x="bottomleft", legend=type.names, col=type.colors, lwd=type.widths, lty=type.lines, cex=0.6, ncol=2)                
                 }
             } else {
                 if (length(timepoint.ss) != nrow(pair)) next
@@ -303,10 +374,24 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
 
         prev <- NULL
         current <- NULL
+        new.mutation <- FALSE
+        new.types <- character(0)
         if (identical(row.col, "total")) {
             data.cols <- c(prev.all$coop.sum.col, prev.all$cheat.sum.col)
             prev <- prev.all$summary
             current <- current.all$summary
+            new.mutation <- (ncol(prev) < ncol(current))
+            if (new.mutation) {
+                new.types <- setdiff(names(current), names(prev))  
+                current.new <- current[-c(1:(ncol(prev)-2), ncol(current)-1, ncol(current))]
+                new.cols <- if (nrow(prev) > nrow(current)) {
+                    rbind((current.new - current.new), (current.new - current.new)[1:(nrow(prev)-nrow(current.new)),])                   
+                } else {
+                    (current.new - current.new)[1:nrow(prev),]
+                }
+                prev <- cbind(prev[,1:(ncol(prev)-2)], new.cols, prev[,(ncol(prev)-1):ncol(prev)])
+                names(prev) <- names(current)
+            }
             paired <- rbind(prev, current)
             extinct <- extinct + do.plot(paired)
         } else {
@@ -319,17 +404,50 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
                     prev <- prev[row.sample,]
                     current <- current[row.sample,]
                 }
+                new.mutation <- (ncol(prev) < ncol(current))
+                if (new.mutation) {    
+                    new.types <- setdiff(names(current), names(prev))              
+                    current.new <- current[-c(1:(ncol(prev)-2), ncol(current)-1, ncol(current))]
+                    new.cols <- if (nrow(prev) > nrow(current)) {
+                        rbind((current.new - current.new), (current.new - current.new)[1:(nrow(prev)-nrow(current.new)),])                   
+                    } else {
+                        (current.new - current.new)[1:nrow(prev),]
+                    }
+                    prev <- cbind(prev[,1:(ncol(prev)-2)], new.cols, prev[,(ncol(prev)-1):ncol(prev)])
+                    names(prev) <- names(current)
+                }
                 paired <- rbind(prev, current)
             } else {
                 prev <- prev.all$dat[prev.all$dat$row.col %in% row.col,]
                 current <-
                     current.all$dat[current.all$dat$row.col %in% row.col,]
+                new.mutation <- (ncol(prev) < ncol(current))
+                if (new.mutation) {
+                    new.types <- setdiff(names(current), names(prev))  
+                    current.new <- current[-c(1:(ncol(prev)-2), ncol(current)-1, ncol(current))]
+                    new.cols <- if (nrow(prev) > nrow(current)) {
+                        rbind((current.new - current.new), (current.new - current.new)[1:(nrow(prev)-nrow(current.new)),])                   
+                    } else {
+                        (current.new - current.new)[1:nrow(prev),]
+                    }
+                    prev <- cbind(prev[,1:(ncol(prev)-2)], new.cols, prev[,(ncol(prev)-1):ncol(prev)])
+                    names(prev) <- names(current)
+                }
                 paired <- rbind(prev, current)
                 if (nrow(paired)==0) next
             }
-            for (pair in split(paired, paired$row.col)) {
-                extinct <- extinct + do.plot(pair)
+            split_paired <- split(paired, paired$row.col)[length(split(paired, paired$row.col))]
+            if (plot.all) {
+                pair.all <- split_paired[[1]][,data.cols] - split_paired[[1]][,data.cols]
+                for (pair in split(paired, paired$row.col))
+                    pair.all <- pair.all + pair[,data.cols]
+                extinct <- extinct + do.plot(pair.all)
+            } else {
+                for (pair in split(paired, paired$row.col)) {
+                    extinct <- extinct + do.plot(pair)
+                }
             }
+
         }
 
         if (save.movie) {
@@ -349,12 +467,107 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
                extinct=extinct, total=info$size)
 }
 
+plot.mutations <- function(folder, data.ext='tab', save.to, device='png', param="km") {
+
+    graphics.off()
+    name.match <- paste("^.*/(.*)\\.",data.ext,sep="")
+
+    conditions <- list.files(folder, full.names=TRUE)
+    conditions <- subset(conditions, grepl("mutant-freq", conditions) &
+                         file.info(conditions)$isdir)
+    n.conditions <- length(conditions)
+    if (length(conditions)==0) stop("no folders match.")
+    i <- 0
+    for (condition in conditions) {
+        i <- i + 1
+        var.list <- make.var.list(condition)
+        var.names <- names(var.list)
+        res <- data.frame()
+        plot.name <- character(0)
+        for (var in seq_along(var.list)) { 
+            plot.name <- paste0(plot.name, var.names[var], "=", as.character(var.list[var]), ", ")
+        }
+        plot.name <- paste(substr(plot.name, 1, nchar(plot.name)-2), param)
+        runs <- list.files(condition, full.names=TRUE)
+        runs <- subset(runs, file.info(runs)$isdir)
+        cat("\nProcessing", condition, "\n")
+        cat(i, "of", n.conditions, "conditions\n")
+        cat(length(runs), "runs in folder\n")
+        for (j in seq_along(runs)) {
+            timepoints <- list.files(runs[j], full.names=TRUE)
+            info.file <- subset(timepoints, grepl(INFO_FILE, timepoints))
+            if (length(info.file)==0) {
+                cat("\n\tno info file found in run", run.id, "\n")
+                next
+            }
+            info <- parse.infofile(info.file)
+            timepoints <- subset(timepoints, !grepl(INFO_FILE, timepoints))
+            n.timepoints <- length(timepoints)
+
+            all.timepoints <- as.numeric(sub(name.match,"\\1", timepoints,
+                                             perl=TRUE))
+            all.hrs <- sort(all.timepoints/info$ts.scale)
+            final.hr <- all.hrs[length(all.hrs)]
+            timepoints.ordered <- timepoints[order(all.timepoints)]
+
+            dat <- metapop.process(timepoints.ordered[length(timepoints.ordered)])
+            coop.range <- 2:(length(dat$coop.cols)+1)
+            cheat.range <- (length(dat$coop.cols)+2):(length(dat$coop.cols)+length(dat$cheat.cols)+1)
+            cat('\nFound', as.character(length(coop.range)+length(cheat.range)), 'mutations.\n')
+            coop.names <- names(dat$summary)[coop.range]
+            cheat.names <- names(dat$summary)[cheat.range]
+            coop.max <- as.numeric(sapply(coop.names, function(x) substr(x, 6, 10)))
+            coop.km <- as.numeric(sapply(coop.names, function(x) substr(x, 12, 15)))
+            coop.sizes <- as.numeric(dat$summary[coop.range])
+            res <- rbind(res, data.frame(type=rep("coop", length(coop.sizes)), max=coop.max, km=coop.km, size=coop.sizes))
+            cheat.max <- as.numeric(sapply(cheat.names, function(x) substr(x, 7, 11)))
+            cheat.km <- as.numeric(sapply(cheat.names, function(x) substr(x, 13, 16)))
+            cheat.sizes <- as.numeric(dat$summary[cheat.range])
+            res <- rbind(res, data.frame(type=rep("cheat", length(cheat.sizes)),max=cheat.max, km=cheat.km, size=cheat.sizes))
+        }
+        graphics.off()
+        y.range <- c(0,8)
+        coop.locs <- as.vector(res$type)=="coop"
+        colors <- replace(replace(as.vector(res$type), !coop.locs, "blue"), coop.locs, "red")
+        plot.path <- file.path(save.to, plot.name)
+        if (!file.exists(save.to)) dir.create(save.to, recursive=TRUE)
+        not.zero <- res$size>0
+        if (param == "km") {
+            x.range <- c(-1, 1)
+            default.plot(w=long.plot.dim, h=square.plot.dim,
+                     dev=device, name=plot.path)
+            plot(x.range, y.range, type="n", ann=FALSE, axes=FALSE, log="")
+            title(main=plot.name,cex.main=1)
+            points(log10(res$km)[not.zero], log10(res$size)[not.zero], col=colors, pch=16, cex=1.2)
+            axis(1, lwd=par()$lwd, labels=c(0.1, 1, 10), at=c(-1, 0, 1))
+            mtext(side=1, text="Monod constant", line=3.0,
+              cex=mtext.cex)
+        } else {
+            print(res$max)
+            x.range <- c(0, 0.5)
+            default.plot(w=long.plot.dim, h=square.plot.dim,
+                     dev=device, name=plot.path)
+            plot(x.range, y.range, type="n", ann=FALSE, axes=FALSE, log="")
+            title(main=plot.name,cex.main=1)            
+            points(res$max[not.zero], log10(res$size)[not.zero], col=colors, pch=16, cex=1.2)
+            axis(1, lwd=par()$lwd, labels=c(0, 0.1, 0.2, 0.3, 0.4, 0.5), at=c(0, 0.1, 0.2, 0.3, 0.4, 0.5))
+            mtext(side=1, text="Max growth rate", line=3.0, cex=mtext.cex)
+        }
+
+        axis(2, lwd=par()$lwd, labels=c(1, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8), at=c(0:8))
+        mtext(side=2, text="# of cells at end of sim", line=4.2, cex=mtext.cex)
+        legend(x="topleft", legend=c("coop", "cheat"), col=c("red", "blue"), pch=16)
+        dev.off()
+
+
+    }
+}
+
 release.test <- function(folder, max.release=1e6, A=7, max.r=log(2), lag=100,
                          ts.scale=200) 
 {
     res <- data.frame()
-    for (dat.file in list.files(folder, full.names=TRUE, include.dirs=FALSE))
-    {
+    for (dat.file in list.files(folder, full.names=TRUE)) {
         release.rate <- as.numeric(sub(".*release=(.*?)_.*",
                                        "\\1", dat.file, perl=TRUE))
         cat("release rate =", release.rate,"\n")
@@ -363,6 +576,7 @@ release.test <- function(folder, max.release=1e6, A=7, max.r=log(2), lag=100,
 
         size <- as.numeric(sub(".*size=(.*)_occ.*", "\\1", dat.file,
                                perl=TRUE))
+
         size <- size^2
 
         dat <- read.delim(dat.file)
@@ -509,7 +723,7 @@ plot.survival.prob <- function(dat,device="x11", p, k, x,
     graphics.off()
     default.plot(w=square.plot.dim,h=square.plot.dim,device=device,name=name)
     plot(survival.prob~release.rate, data=agg.dat, ann=FALSE, axes=FALSE,
-         cex=pch.cex, subset=survival.prob>0, type="n", log="x",  ...)
+         cex=pch.cex, type="n", log="x",  ...)
     #axis(1,lwd=par()$lwd)
     log.axis(1,lwd=par()$lwd, cex.axis=axis.cex)
     axis(2,lwd=par()$lwd, las=2, cex.axis=axis.cex)
@@ -518,21 +732,16 @@ plot.survival.prob <- function(dat,device="x11", p, k, x,
     points(survival.prob~release.rate, data=agg.dat, cex=pch.cex, ...)
     box()
 
-    fit <- nls(survival.prob~(p*(release.rate-x)) / (k+(release.rate-x)),
-               data=agg.dat, subset=survival.prob>0.001, start=list(p=p,k=k,x=x))
+    fit <- nls(survival.prob~(p*(release.rate-x))/ (k+(release.rate-x)),
+               data=dat, start=list(p=p,k=k,x=x), subset=survival.prob>0 )
 
     p.max <- coef(fit)['p']
     k.survive <- coef(fit)['k']
     x.shift <- coef(fit)['x']
-    if (x.shift <= 0) x.start <- .01 else x.start <- x.shift
-    x.end <- match.call()$xlim
-    if (!is.null(x.end)) {
-        x.end <- as.list(x.end)[[3]]
-    } else {
-        x.end <- max(agg.dat$release.rate)
-    }
-    
-    curve((p.max*(x-x.shift))/(k.survive+(x-x.shift)), add=TRUE, from=x.start, to=x.end, col=fit.col, lty=2, lwd=5)
+
+    curve((p.max*(x-x.shift))/(k.survive+(x-x.shift)),
+          add=TRUE, from=x.shift, to=as.list(match.call()$xlim)[[3]],
+          col=fit.col, lty=2, lwd=5)
 
     print(fit)
     print(confint(fit))
@@ -552,23 +761,21 @@ release2growthrate <- function(r, slope=0.181, intercept=0) {
     slope * r - intercept
 }
 
-summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
+summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=50,
                            max.runs=30, pattern=NULL, min.hr=2e4, ...)
 {
     graphics.off()
-
     name.match <- paste("^.*/(.*)\\.",data.ext,sep="")
 
     conditions <- list.files(folder, full.names=TRUE, pattern=pattern)
-    conditions <- subset(conditions, grepl("(global|local)", conditions) &
+    conditions <- subset(conditions, grepl("mutant-freq", conditions) &
                          file.info(conditions)$isdir)
     n.conditions <- length(conditions)
     if (length(conditions)==0) stop("no folders match.")
     var.list <- make.var.list(conditions)
 
     res.names <- c(names(var.list), "condition", "run.id", "coop.freq.mean",
-                   "coop.freq.sd", "coop.size.mean", "coop.size.sd", 
-                   "timepoints.used", "last", "complete")
+                   "coop.freq.sd", "timepoints.used", "last", "hrs", "complete")
 
     res <- data.frame(matrix(0, nrow=n.conditions*max.runs,
                              ncol=length(res.names)))
@@ -576,52 +783,24 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
 
     cond.idx <- 1
     row.idx <- 1
-    remove.rows <- NULL
+    n.cols <- 0
+    col.names <- ""
     for (condition in conditions) {
         #if (cond.idx!=158) { cond.idx <- cond.idx+1; next }
         runs <- list.files(condition, full.names=TRUE)
         runs <- subset(runs, file.info(runs)$isdir)
-        max.hrs <- var.list[["hrs"]][cond.idx]
-        n.init <- var.list[["n"]][cond.idx]
-        if (var.list[["u"]][cond.idx] > 0) {
-            cond.idx <- cond.idx + 1
-            next
-        }
+        max.hrs <- 20000
+        n.init <- 100000
+        #if (var.list[["u"]][cond.idx] > 0) {
+        #    cond.idx <- cond.idx + 1
+        #    next
+        #}
 
         cat("\nProcessing", condition, "\n")
         cat(cond.idx, "of", n.conditions, "conditions\n")
         cat(length(runs), "runs in folder\n")
 
-        adding <- FALSE
-        updating <- FALSE
-        current.df.row <- NULL
         for (j in seq_along(runs)) {
-            run.id <- basename(runs[j])
-            matching.id.rows <- which(current.df$run.id==run.id)
-            current.df.row <- current.df[matching.id.rows,]
-            if (nrow(current.df.row)==0 || is.null(current.df.row)) {
-                cat("adding", run.id, "\n")
-                adding <- TRUE
-            } else if (nrow(current.df.row) == 1) {
-                if (current.df.row$complete) {
-                    cat(run.id, "exists, skipping.\n")
-                    next
-                } else {
-                    cat("updating", run.id, ".\n")
-                    updating <- TRUE
-                }
-            } else {
-                cat("id ", run.id, " has multiple entries...\n")
-                if (any(current.df.row$complete)) {
-                    remove.rows <- 
-                        c(remove.rows, 
-                          matching.id.rows[!current.df.row$complete])
-                    next
-                } else {
-                    remove.rows <- c(remove.rows, matching.id.rows[-1])
-                }
-            }
-
             res[row.idx, names(var.list)] <- lapply(var.list,
                                                     function(x) x[cond.idx])
 
@@ -633,13 +812,8 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                 next
             }
             info <- parse.infofile(info.file)
-
             timepoints <- subset(timepoints, !grepl(INFO_FILE, timepoints))
             n.timepoints <- length(timepoints)
-            if (n.timepoints == 1) {
-                cat("\n\tonly one file found in run", run.id, "\n")
-                next
-            }
 
             all.timepoints <- as.numeric(sub(name.match,"\\1", timepoints,
                                              perl=TRUE))
@@ -647,23 +821,37 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
             final.hr <- all.hrs[length(all.hrs)]
             timepoints.ordered <- timepoints[order(all.timepoints)]
 
+            run.id <- basename(runs[j])
+            if (run.id %in% current.df$run.id) {
+                if (current.df[current.df$run.id==run.id,]$complete) {
+                    cat(run.id, "exists, skipping.\n")
+                    next
+                } else {
+                    cat("updating", run.id, ".\n")
+                }
+            } else {
+                cat("adding", run.id, "\n")
+            }
+
+            if (n.timepoints == 1) {
+                cat("\n\tonly one file found in run", run.id, "\n")
+                next
+            }
+
+            if (j==1) {
+                a.run <-metapop.process(timepoints[1], info$size)$summary
+
+                n.cols <- ncol(a.run)
+                col.names <- names(a.run)
+            }
+
             used <- 0
             coop.freqs <- vector("numeric", last)
-            coop.sizes  <- vector("numeric", last)
             lasts <- tail(timepoints.ordered, last)
             for (i in rev(seq_along(lasts))) {
-                tryCatch(
-                    {
-                        run.summary <- 
-                            metapop.process(lasts[i], info$size)$summary
-                        coop.freqs[i] <- run.summary$coop.freq
-                        coop.sizes[i] <- run.summary$coops
-                    }, 
-                    error=function(e) {
-                        cat("skipping\n")
-                        next
-                    }
-                )
+                tryCatch(coop.freqs[i] <- 
+                    metapop.process(lasts[i], info$size)$summary$coop.freq,
+                    error=function(e) { cat("skipping\n") })
 
                 used <- used + 1
 
@@ -671,8 +859,8 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                 if (coop.freqs[i] == 0 || is.nan(coop.freqs[i])) {
                     coop.freqs <- 0
                     break
-                } else if (coop.freqs[i] == 1) {
-                    coop.freqs <- 1
+                } else {
+                    coop.freqs <- coop.freqs[i]
                     break
                 }
 
@@ -686,52 +874,33 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                 cat(run.id, "appears incomplete\n")
             }
 
-            freq.mean <- mean(coop.freqs)
-            freq.sd   <- ifelse(length(coop.freqs)==1, 0, sd(coop.freqs))
-            size.mean <- mean(coop.sizes)
-            size.sd   <- ifelse(length(coop.sizes)==1, 0, sd(coop.sizes))
-            if (adding) {
-                res[row.idx,]$condition       <- cond.idx
-                res[row.idx,]$run.id          <- run.id
-                res[row.idx,]$coop.freq.mean  <- freq.mean
-                res[row.idx,]$coop.freq.sd    <- freq.sd
-                res[row.idx,]$coop.size.mean  <- size.mean
-                res[row.idx,]$coop.size.sd    <- size.sd
-                res[row.idx,]$timepoints.used <- used
-                res[row.idx,]$last            <- last
-                res[row.idx,]$hrs             <- final.hr
-                res[row.idx,]$complete        <- complete
-                row.idx <- row.idx+1
-            } else if (updating) {
-                current.row <- which(current.df$run.id == run.id)[1]
-                current.df[current.row,]$condition       <- cond.idx
-                current.df[current.row,]$run.id          <- run.id
-                current.df[current.row,]$coop.freq.mean  <- freq.mean
-                current.df[current.row,]$coop.freq.sd    <- freq.sd
-                current.df[current.row,]$coop.size.mean  <- size.mean
-                current.df[current.row,]$coop.size.sd    <- size.sd
-                current.df[current.row,]$timepoints.used <- used
-                current.df[current.row,]$last            <- last
-                current.df[current.row,]$hrs             <- final.hr
-                current.df[current.row,]$complete        <- complete
-            }
+            mean.freq <- mean(coop.freqs)
+            sd.freq   <- ifelse(length(coop.freqs)==1, 0, sd(coop.freqs))
+
+            res[row.idx,]$condition       <- cond.idx
+            res[row.idx,]$run.id          <- run.id
+            res[row.idx,]$coop.freq.mean  <- mean.freq
+            res[row.idx,]$coop.freq.sd    <- sd.freq
+            res[row.idx,]$timepoints.used <- used
+            res[row.idx,]$last            <- last
+            res[row.idx,]$hrs             <- final.hr
+            res[row.idx,]$complete        <- complete
+            row.idx <- row.idx+1
         }
+        n.cols <- 0
+        col.names <- ""
         cond.idx <- cond.idx + 1
     }
     cat("\n")
     res <- res[1:(row.idx-1),]
-    if (!is.null(remove.rows)) {
-        current.df <- current.df[-remove.rows,]
-    }
     current.df <- rbind(current.df, res)
     current.df
 }
 
-plot.summary <- function(dat, device="x11", save.to=NULL, jit=NULL, gap=2, 
+plot.summary <- function(dat, device="x11", save.to, jit=0.1, gap=2, 
                          leg.x=1, leg.y=0.8, min.hr=2e4, ...)
 {
     graphics.off()
-
     initial.pop.size <- 1e5
     y.pad <- 0.1
 
@@ -744,10 +913,9 @@ plot.summary <- function(dat, device="x11", save.to=NULL, jit=NULL, gap=2,
         leg.title <- "   initial mutants per population   "
         last.split <- "mutant-freq"
     } else {
-        leg.title <- "   initial size   "
-        last.split <- "n"
+        leg.title <- "   mutation rate   "
+        last.split <- "mut-rate"
     }
-
     n.migs <- length(unique(dat$mig))
     n.conds <- length(unique(dat[[last.split]]))+gap
     spacing <- seq(1, n.conds*n.migs, by=n.conds)
@@ -758,85 +926,79 @@ plot.summary <- function(dat, device="x11", save.to=NULL, jit=NULL, gap=2,
     #x.at <- 1:n.migs
     x.range <- range(x.at)
     y.range <- c(0-y.pad, 1+y.pad)
-    for (mig.range in split(dat, dat$range)) {
-        for (mig.range.occ in split(mig.range, mig.range$occ)) {
-            plot.name <- paste(unique(mig.range.occ$range), ", ",
-                               "occ=", unique(mig.range.occ$occ), sep="")
-            plot.path <- NULL
-            if (device != "x11") {
-                plot.path <- file.path(save.to, plot.name)
-                if (!file.exists(save.to)) dir.create(save.to, recursive=TRUE)
-            }
-            default.plot(w=long.plot.dim,h=square.plot.dim, dev=device, 
-                         name=plot.path)
-            plot(x.range, y.range, type="n", ann=FALSE, axes=FALSE, log="",
-                 xaxs='i')
-            title(main=plot.name,cex.main=1)
+    for (dat.occ in split(dat, dat$occ)) {
+        plot.name <- paste(unique(dat.occ$range), ", ",
+                           "occ=", unique(dat.occ$occ), sep="")
+        plot.path <- file.path(save.to, plot.name)
+        if (!file.exists(save.to)) dir.create(save.to, recursive=TRUE)
+        default.plot(w=long.plot.dim,h=square.plot.dim, dev=device, name=plot.path)
+        plot(x.range, y.range, type="n", ann=FALSE, axes=FALSE, log="",
+             xaxs='i')
+        title(main=plot.name,cex.main=1)
 
-            color.start <- ifelse(last.split=="n", 2, 1)
-            color <- color.start
-            by.last <- split(mig.range.occ, mig.range.occ[[last.split]])
-            cond <- unique(names(by.last))
-            if (last.split=="mutant-freq") { 
-                cond <- as.numeric(cond)*initial.pop.size
-            }
-            x.idx <-1.1 
-            for (i in seq_along(by.last)) {
-                mut <- by.last[[i]]
-                entries <- lapply(split(mut, mut$mig), nrow)
-                x.spot <- c()
-                miss <- NULL
-                for (j in seq_along(x.label)) {
-                    v <- if (x.label[j]==0 || x.label[j]==1) {
-                        x.label[j]
-                    } else {
-                        10^x.label[j]
-                    }
-                    ent <- which(as.character(v)==names(entries))
-                    if (length(ent)>0) {
-                        x.spot <- c(x.spot, rep(j,entries[[ent]]))
-                    } else {
-                        x.spot <- c(x.spot, rep(j,1))
-                        miss <- c(miss, length(x.spot))
-                    }
+        color.start <- ifelse(last.split=="n", 2, 1)
+        color <- color.start
+        by.last <- split(dat.occ, dat.occ[[last.split]])
+        cond <- unique(names(by.last))
+        if (last.split=="mutant-freq") { 
+            cond <- as.numeric(cond)*initial.pop.size
+        }
+        x.idx <-1.1 
+        for (i in seq_along(by.last)) {
+            mut <- by.last[[i]]
+            entries <- lapply(split(mut, mut$mig), nrow)
+            x.spot <- c()
+            miss <- NULL
+            for (j in seq_along(x.label)) {
+                v <- if (x.label[j]==0 || x.label[j]==1) {
+                    x.label[j]
+                } else {
+                    10^x.label[j]
                 }
-                x.jit <- jitter(spacing[x.spot]+x.idx, amount=jit)
-                y.jit <- jitter(mut$coop.freq.mean, amount=jit/10)
-                mut <- within(mut, {lower <- ifelse(coop.freq.sd>1e-3,
-                                                    y.jit-coop.freq.sd, NA)
-                                    upper <- ifelse(coop.freq.sd>1e-3,
-                                                    y.jit+coop.freq.sd, NA)})
-                for (m in miss) {
-                    y.jit <- c(y.jit[1:(m-1)],NA,
-                               y.jit[m:length(y.jit)])
+                ent <- which(as.character(v)==names(entries))
+                if (length(ent)>0) {
+                    x.spot <- c(x.spot, rep(j,entries[[ent]]))
+                } else {
+                    x.spot <- c(x.spot, rep(j,1))
+                    miss <- c(miss, length(x.spot))
                 }
-                if (length(x.jit)!=length(y.jit)) browser()
-                points(x.jit, y.jit, col=color, pch=color, cex=1.2)
-                x.jit <- if (is.null(miss)) x.jit else x.jit[-miss]
-                arrows(x.jit, ifelse(mut$lower<0, 0, mut$lower),
-                       x.jit, ifelse(mut$upper>1, 1, mut$upper),
-                       code=3, angle=90, length=0.1, col=color)
-                color <- color+1
-                x.idx <- x.idx + 1
             }
-            axis(1, at=labels.at, labels=x.label, lwd.ticks=par()$lwd)
-                 
-            axis(2, las=2, lwd.ticks=par()$lwd)
-            box()
-            mtext(side=1, text="log[Migration rate (/hr)]", line=3.0,
-                  cex=mtext.cex)
-            mtext(side=2, text="Coop. frequency", line=4.2, cex=mtext.cex)
-            legend(x=leg.x,
-                   y=leg.y,
-                   legend=cond,
-                   title=leg.title,
-                   col=color.start:(color-1), pch=color.start:(color-1),
-                   pt.cex=1.5) 
-            if (device=="x11") {
-                browser()
-            } else {
-                dev.off()
+            x.jit <- jitter(spacing[x.spot]+x.idx, amount=jit)
+            y.jit <- jitter(mut$coop.freq.mean, amount=jit/10)
+            mut <- within(mut, {lower <- ifelse(coop.freq.sd>1e-3,
+                                                y.jit-coop.freq.sd, NA)
+                                upper <- ifelse(coop.freq.sd>1e-3,
+                                                y.jit+coop.freq.sd, NA)})
+            for (m in miss) {
+                y.jit <- c(y.jit[1:(m-1)],NA,
+                           y.jit[m:length(y.jit)])
             }
+            if (length(x.jit)!=length(y.jit)) browser()
+            points(x.jit, y.jit, col=color, pch=color, cex=1.2)
+            x.jit <- if (is.null(miss)) x.jit else x.jit[-miss]
+            arrows(x.jit, ifelse(mut$lower<0, 0, mut$lower),
+                   x.jit, ifelse(mut$upper>1, 1, mut$upper),
+                   code=3, angle=90, length=0.1, col=color)
+            color <- color+1
+            x.idx <- x.idx + 1
+        }
+        axis(1, at=labels.at, labels=x.label, lwd.ticks=par()$lwd)
+             
+        axis(2, las=2, lwd.ticks=par()$lwd)
+        box()
+        mtext(side=1, text="log[Migration rate (/hr)]", line=3.0,
+              cex=mtext.cex)
+        mtext(side=2, text="Coop. frequency", line=4.2, cex=mtext.cex)
+        legend(x=leg.x,
+               y=leg.y,
+               legend=cond,
+               title=leg.title,
+               col=color.start:(color-1), pch=color.start:(color-1),
+               pt.cex=1.5) 
+        if (device=="x11") {
+            browser()
+        } else {
+            dev.off()
         }
     }
     
@@ -874,8 +1036,8 @@ plot.survival <- function(dat, split2="occ", device="x11",
         leg.title <- "   initial mutants   "
         last.split.name <- "mutant-freq"
     } else {
-        leg.title <- "   initial size   "
-        last.split.name <- "n"
+        leg.title <- "   mutation rate   "
+        last.split.name <- "mut-rate"
     }
 
     draw.arrows <- function(est, color) {
@@ -899,121 +1061,109 @@ plot.survival <- function(dat, split2="occ", device="x11",
 
     n.conds <- length(unique(dat[[last.split.name]]))
     all.res <- data.frame()
-    for (mig.range in split(dat, dat$range)) {
-        rang <- unique(mig.range$range)
-        for (s2 in split(mig.range, mig.range[[split2]])) {
-            occ <- sprintf("%.2f", unique(s2$occ))
-            split2.val <- sprintf("%.2f", unique(s2[[split2]]))
-            plot.name <- paste0(rang, ", ", split2, "=", split2.val,
-                                "_survive_freq")
-            plot.path <- file.path(save.to, plot.name)
-            if (!file.exists(save.to)) dir.create(save.to, recursive=TRUE)
-            default.plot(w=long.plot.dim, h=square.plot.dim,
-                         dev=device, name=plot.path)
-            plot(x.range, y.range, type="n", ann=FALSE, axes=FALSE, log="",
-                 ...)
-            title(main=plot.name,cex.main=1)
+    for (s2 in split(dat, dat[[split2]])) {
+        occ <- sprintf("%.2f", unique(s2$occ))
+        split2.val <- sprintf("%.2f", unique(s2[[split2]]))
+        plot.name <- paste0("global, ", split2, "=", split2.val,
+                            "_survive_freq")
+        plot.path <- file.path(save.to, plot.name)
+        if (!file.exists(save.to)) dir.create(save.to, recursive=TRUE)
+        default.plot(w=long.plot.dim, h=square.plot.dim,
+                     dev=device, name=plot.path)
+        plot(x.range, y.range, type="n", ann=FALSE, axes=FALSE, log="",
+             ...)
+        title(main=plot.name,cex.main=1)
 
-            color.start <- ifelse(last.split.name=="n", 2, 1)
-            color <- color.start
-            by.last <- split(s2, s2[[last.split.name]])
-            cond <- unique(names(by.last))
-            if (last.split.name=="mutant-freq") { 
-                cond <- as.numeric(cond)*unique(s2$n)
-            }
-            for (i in seq_along(by.last)) {
-                m <- 1
-                est <- c()
-                last <- by.last[[i]]
-                for (mig.rate in x.label) {
-                    if (mig.rate=="") browser()
-                    if (mig.rate != 0 && mig.rate != 1) {
-                        mig.rate <- 10^mig.rate
-                    }
-                    if (mig.rate %in% unique(last$mig)) {
-                        last.ss <- last[last$mig==mig.rate,]
-                        last.s <- unique(last.ss[last.split.name])
-                        survived <- length(last.ss$coop.freq.mean[
-                                           last.ss$coop.freq.mean>cutoff])
-                        tot <- length(last.ss$coop.freq.mean)
-                        bnm <- binom.wilson(x=survived, n=tot)
-                        code <- if (bnm$mean==0) 1
-                            else if (bnm$mean==1) 2
-                            else 3
-
-                        est <- rbind(est, data.frame(mig.range=rang, 
-                                                     last.split=last.s,
-                                                     occ=occ,
-                                                     bnm, mig=mig.rate,
-                                                     x.at=m, code=code))
-                    } else if (mig.rate==1) {
-                        est <- rbind(est, rep(NA, ncol(est)))
-                        est[nrow(est),"x.at"] <- m-0.5
-                        m <- m-1
-                    } else {
-                        est <- rbind(est, data.frame(mig.range=rang, 
-                                                     last.split=last.s,
-                                                     occ=occ, method=NA,
-                                                     x=NA,n=NA,mean=NA,
-                                                     lower=NA,upper=NA,
-                                                     mig=mig.rate,
-                                                     x.at=m, code=NA))
-                    }
-                    m <- m+1
+        color.start <- ifelse(last.split.name=="n", 2, 1)
+        color <- color.start
+        by.last <- split(s2, s2[[last.split.name]])
+        cond <- unique(names(by.last))
+        if (last.split.name=="mutant-freq") { 
+            cond <- as.numeric(cond)*unique(s2$n)
+        }
+        for (i in seq_along(by.last)) {
+            m <- 1
+            est <- c()
+            last <- by.last[[i]]
+            for (mig.rate in x.label) {
+                if (mig.rate=="") browser()
+                if (mig.rate != 0 && mig.rate != 1) {
+                    mig.rate <- 10^mig.rate
                 }
-                all.res <- rbind(all.res, est)
-                lines(est$x.at, est$mean, col=color, pch=color,
-                      type="o", cex=2)
-                draw.arrows(est, color)
-                color <- color+1
+                if (mig.rate %in% unique(last$mig)) {
+                    last.ss <- last[last$mig==mig.rate,]
+                    last.s <- unique(last.ss[last.split.name])
+                    survived <- length(last.ss$coop.freq.mean[
+                                       last.ss$coop.freq.mean>cutoff])
+                    tot <- length(last.ss$coop.freq.mean)
+                    bnm <- binom.wilson(x=survived, n=tot)
+                    code <- if (bnm$mean==0) 1
+                        else if (bnm$mean==1) 2
+                        else 3
+
+                    est <- rbind(est, data.frame(mig.range='global', 
+                                                 last.split=last.s,
+                                                 occ=occ,
+                                                 bnm, mig=mig.rate,
+                                                 x.at=m, code=code))
+                } else if (mig.rate==1) {
+                    est <- rbind(est, rep(NA, ncol(est)))
+                    est[nrow(est),"x.at"] <- m-0.5
+                    m <- m-1
+                } else {
+                    est <- rbind(est, data.frame(mig.range='global', 
+                                                 last.split=last.s,
+                                                 occ=occ, method=NA,
+                                                 x=NA,n=NA,mean=NA,
+                                                 lower=NA,upper=NA,
+                                                 mig=mig.rate,
+                                                 x.at=m, code=NA))
+                }
+                m <- m+1
             }
-            if (length(est$x.at) != length(x.label)) browser()
-            x.label[2] <- NA
-            axis(1, at=est$x.at, labels=x.label, lwd.ticks=par()$lwd)
-            x.label[2] <- 1
-            axis(2, las=2, lwd.ticks=par()$lwd)
-            box()
-            mtext(side=1, text="log[Migration rate (/hr)]", line=3.0,
-                  cex=mtext.cex)
-            mtext(side=2, text="Coop. survival frequency", line=4.2,
-                  cex=mtext.cex)
-            legend(x=1, y=0.8,
-                   legend=cond,
-                   title=leg.title,
-                   col=color.start:(color-1), pch=color.start:(color-1),
-                   pt.cex=1.5) 
-            if (device=="x11") {
-                browser()
-            } else {
-                dev.off()
-            }
+            all.res <- rbind(all.res, est)
+            lines(est$x.at, est$mean, col=color, pch=color,
+                  type="o", cex=2)
+            draw.arrows(est, color)
+            color <- color+1
+        }
+        if (length(est$x.at) != length(x.label)) browser()
+        x.label[2] <- NA
+        axis(1, at=est$x.at, labels=x.label, lwd.ticks=par()$lwd)
+        x.label[2] <- 1
+        axis(2, las=2, lwd.ticks=par()$lwd)
+        box()
+        mtext(side=1, text="log[Migration rate (/hr)]", line=3.0,
+              cex=mtext.cex)
+        mtext(side=2, text="Coop. survival frequency", line=4.2,
+              cex=mtext.cex)
+        legend(x=1, y=0.8,
+               legend=cond,
+               title=leg.title,
+               col=color.start:(color-1), pch=color.start:(color-1),
+               pt.cex=1.5) 
+        if (device=="x11") {
+            browser()
+        } else {
+            dev.off()
         }
     }
     na.exclude(all.res)
 }
 
 make.var.list <- function(filenames) {
-    vars <- c("range", "type", "n", "mutant-freq", "coop-release", "gamma",
-              "coop-freq", "km", "cheat-adv", "evo-adv", "evo-trade",
-              "resource", "size", "occ", "mig", "u", "hrs")
+    vars <- c("mutant-freq", "mut-rate", "mig", 'coop-to-cheat', "occ")
     var.list <- vector("list", length(vars))
     names(var.list) <- vars
-
     for (v in vars) {
-        match.string <- if (v=="range") {
-            "^(local|global).*"
-        } else if (v=="type") {
-            ".*(indv|prop).*"
-        } else if (v==tail(vars,1)) {
+        match.string <- if (v==tail(vars,1)) {
             paste0(".*", v, "=(.*?)$")
         } else {
             paste0(".*", v, "=(.*?)_.*")
         }
 
         var.list[[v]] <- sub(match.string, "\\1", basename(filenames))
-        if (v!="type" && v!="range") {
-            var.list[[v]] <- as.numeric(var.list[[v]])
-        }
+        var.list[[v]] <- as.numeric(var.list[[v]])
     }
     var.list
 }
@@ -1062,10 +1212,11 @@ save.to <- function(data.folder, save.path) {
 
 
 metapop.makeheatmaps <- function(folder, first=0, last, data.ext="tab",
-                                 device="jpeg", pop.size, ...) {
+                                 device="png", pop.size, ...) {
     graphics.off()
     save.path <- save.to(data.folder=folder, ...)
     save.path <- file.path(save.path, "movie")
+    if (!file.exists(save.path)) dir.create(save.path, recursive=TRUE)
     file.copy(file.path(folder, INFO_FILE), save.path)
     files <- get.files(folder, data.ext)$files
     total <- length(files)
