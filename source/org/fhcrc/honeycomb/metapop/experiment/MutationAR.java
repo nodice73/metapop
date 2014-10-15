@@ -52,6 +52,7 @@ import org.fhcrc.honeycomb.metapop.migration.IndividualMigration;
 import org.fhcrc.honeycomb.metapop.stop.StopCondition;
 import org.fhcrc.honeycomb.metapop.stop.ExtinctOrGrowingStop;
 import org.fhcrc.honeycomb.metapop.stop.CoopCheatExtinctStop;
+import org.fhcrc.honeycomb.metapop.stop.CheatExtinctStop;
 import org.fhcrc.honeycomb.metapop.stop.AllExtinctStop;
 
 import java.io.File;
@@ -167,15 +168,21 @@ public abstract class MutationAR {
 
         dil_rule = makeDilutionRule();
 
-        mutation_rule = new MutateEachGrowth(mutation_rate, coop_to_cheat_mutation_rate, cheat_to_coop_mutation_rate, mutation_rng);
+        if (mutation_type.equals("indv")) {
+            mutation_rule = new MutateEachGrowth(mutation_rate, coop_to_cheat_mutation_rate, cheat_to_coop_mutation_rate, mutation_rng);
+        } else {
+            mutation_rule = new MutateAllGrowth(mutation_rate, mutation_rng);
+        }
 
         migration_rule = pickMigration();
 
         env_changer = new StaticEnvironment();
         location_picker = new UniqueRandomPicker(rows, cols, location_rng);
 
-        if (initial_coop_freq < 1.0 && initial_coop_freq > 0.0) {
+        if (initial_coop_freq < 1.0 && initial_coop_freq > 0.0 && coop_to_cheat_mutation_rate == 0) {
             stop_condition = new CoopCheatExtinctStop();
+        } else if (initial_coop_freq < 1.0 && initial_coop_freq > 0.0) {
+            stop_condition = new CoopExtinctStop();
         } else {
             int min_pop_size = 1000;
             stop_condition = new ExtinctOrGrowingStop(min_pop_size);
