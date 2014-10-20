@@ -37,7 +37,7 @@ public class CoopExtinctStop extends StopCondition {
         if (world.getSizeByType("coop") == 0)
         {
             System.out.println("coops extinct at step " + world.getStep());
-            cheats_extinct = true;
+            coops_extinct = true;
         }
 
         return (coops_extinct);
