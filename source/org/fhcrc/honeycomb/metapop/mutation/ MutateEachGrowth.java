@@ -33,40 +33,44 @@ public class MutateEachGrowth implements MutationRule {
 	//Mutates cells in a list of Populations by assigning them new MonodCalculator fields
 	//and placing them in new Subpopulations.
 	public void mutate(List<Population> pops) {
-		if (mut_rate != 0) {
-			for (Population pop:pops) {
-				for (Subpopulation sub:pop.copySubpopulations(pop.getSubpopulations())) {
+
+		for (Population pop:pops) {
+			for (Subpopulation sub:pop.copySubpopulations(pop.getSubpopulations())) {
+
+				if (sub.getId().substring(0,4).equals("coop") && coop_to_cheat_rate != 0) {
+					int coop_to_cheat = rng.getNextBinomial(sub.getSize(), coop_to_cheat_rate);
+					sub.setSize(sub.getSize() - coop_to_cheat);
+					double cheater_max = (sub.getFitnessCalculator().getMaxGrowthRate() - 
+						sub.getFitnessCalculator().calculateDeathRate(0)) * 200 * CHEAT_ADV;
+					String cheater_id = "cheat_" + String.format("%.3g", cheater_max) + 
+						sub.getId().substring(sub.getId().lastIndexOf("_"),sub.getId().length());
+					if (pop.getSubpopById(cheater_id) != null) {
+						pop.getSubpopById(cheater_id).setSize(pop.getSubpopById(cheater_id).getSize() + coop_to_cheat);
+					} else {
+						double[] params = {CHEAT_ADV, 1, 1/CHEAT_ADV};
+						pop.addNewSubpopulation(new Subpopulation(coop_to_cheat, sub.getGamma(), 0, 
+							sub.getFitnessCalculator().copyFitnessCalculator(params), cheater_id, this.rng));
+						System.out.println("New subpop: " + cheater_id + " in " + pop.getCoordinate().toString());
+					}
+				}
+				if (sub.getId().substring(0,5).equals("cheat") && cheat_to_coop_rate != 0) {
+					int cheat_to_coop = rng.getNextBinomial(sub.getSize(), cheat_to_coop_rate);
+					sub.setSize(sub.getSize() - cheat_to_coop);
+					double coop_max = (sub.getFitnessCalculator().getMaxGrowthRate() - 
+						sub.getFitnessCalculator().calculateDeathRate(0)) * 200 / CHEAT_ADV;
+					String coop_id = "coop_" + String.format("%.3g", coop_max) + 
+						sub.getId().substring(sub.getId().lastIndexOf("_"),sub.getId().length());
+					if (pop.getSubpopById(coop_id) != null) {
+						pop.getSubpopById(coop_id).setSize(pop.getSubpopById(coop_id).getSize() + cheat_to_coop);
+					} else {
+						double[] params = {1/CHEAT_ADV, 1, CHEAT_ADV};
+						pop.addNewSubpopulation(new Subpopulation(cheat_to_coop, sub.getGamma(), 2.4, 
+							sub.getFitnessCalculator().copyFitnessCalculator(params), coop_id, this.rng));
+						System.out.println("New subpop: " + coop_id + " in " + pop.getCoordinate().toString());
+					}
+				}
+				if (mut_rate != 0) {
 					int mutants = rng.getNextBinomial(sub.getSize(), mut_rate);
-					if (sub.getId().substring(0,4).equals("coop") && coop_to_cheat_rate != 0) {
-						int coop_to_cheat = rng.getNextBinomial(sub.getSize(), coop_to_cheat_rate);
-						sub.setSize(sub.getSize() - coop_to_cheat);
-						double cheater_max = (sub.getFitnessCalculator().getMaxGrowthRate() - 
-							sub.getFitnessCalculator().calculateDeathRate(0)) * 200 * CHEAT_ADV;
-						String cheater_id = "cheat_" + String.format("%.3g", cheater_max) + sub.getId().substring(sub.getId().lastIndexOf("_"),sub.getId().length());
-						if (pop.getSubpopById(cheater_id) != null) {
-							pop.getSubpopById(cheater_id).setSize(pop.getSubpopById(cheater_id).getSize() + coop_to_cheat);
-						} else {
-							double[] params = {CHEAT_ADV, 1, 1/CHEAT_ADV};
-							pop.addNewSubpopulation(new Subpopulation(coop_to_cheat, sub.getGamma(), 0, 
-								sub.getFitnessCalculator().copyFitnessCalculator(params), cheater_id, this.rng));
-							System.out.println("New subpop: " + cheater_id + " in " + pop.getCoordinate().toString());
-						}
-					}
-					if (sub.getId().substring(0,5).equals("cheat") && cheat_to_coop_rate != 0) {
-						int cheat_to_coop = rng.getNextBinomial(sub.getSize(), cheat_to_coop_rate);
-						sub.setSize(sub.getSize() - cheat_to_coop);
-						double coop_max = (sub.getFitnessCalculator().getMaxGrowthRate() - 
-							sub.getFitnessCalculator().calculateDeathRate(0)) * 200 / CHEAT_ADV;
-						String coop_id = "coop_" + String.format("%.3g", coop_max) + sub.getId().substring(sub.getId().lastIndexOf("_"),sub.getId().length());
-						if (pop.getSubpopById(coop_id) != null) {
-							pop.getSubpopById(coop_id).setSize(pop.getSubpopById(coop_id).getSize() + cheat_to_coop);
-						} else {
-							double[] params = {1/CHEAT_ADV, 1, CHEAT_ADV};
-							pop.addNewSubpopulation(new Subpopulation(cheat_to_coop, sub.getGamma(), 2.4, 
-								sub.getFitnessCalculator().copyFitnessCalculator(params), coop_id, this.rng));
-							System.out.println("New subpop: " + coop_id + " in " + pop.getCoordinate().toString());
-						}
-					}
 					sub.setSize(sub.getSize() - mutants);
 					for (int i=0; i<mutants; i++) {
 						double vmax_factor = 1.0;
