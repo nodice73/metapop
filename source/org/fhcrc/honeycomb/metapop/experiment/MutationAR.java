@@ -41,8 +41,6 @@ import org.fhcrc.honeycomb.metapop.coordinate.picker.RandomNeighborPicker;
 import org.fhcrc.honeycomb.metapop.mutation.MutationRule;
 import org.fhcrc.honeycomb.metapop.mutation.NoMutation;
 import org.fhcrc.honeycomb.metapop.mutation.MutateCoopCheat;
-import org.fhcrc.honeycomb.metapop.mutation.MutateBinomial;
-import org.fhcrc.honeycomb.metapop.mutation.MutateAllGrowth;
 import org.fhcrc.honeycomb.metapop.mutation.MutateEachGrowth;
 
 import org.fhcrc.honeycomb.metapop.migration.MigrationRule;
@@ -53,6 +51,7 @@ import org.fhcrc.honeycomb.metapop.stop.StopCondition;
 import org.fhcrc.honeycomb.metapop.stop.ExtinctOrGrowingStop;
 import org.fhcrc.honeycomb.metapop.stop.CoopCheatExtinctStop;
 import org.fhcrc.honeycomb.metapop.stop.CheatExtinctStop;
+import org.fhcrc.honeycomb.metapop.stop.CoopExtinctStop;
 import org.fhcrc.honeycomb.metapop.stop.AllExtinctStop;
 
 import java.io.File;
@@ -168,11 +167,7 @@ public abstract class MutationAR {
 
         dil_rule = makeDilutionRule();
 
-        if (mutation_type.equals("indv")) {
-            mutation_rule = new MutateEachGrowth(mutation_rate, coop_to_cheat_mutation_rate, cheat_to_coop_mutation_rate, mutation_rng);
-        } else {
-            mutation_rule = new MutateAllGrowth(mutation_rate, mutation_rng);
-        }
+        mutation_rule = new MutateEachGrowth(mutation_rate, coop_to_cheat_mutation_rate, cheat_to_coop_mutation_rate, mutation_rng);
 
         migration_rule = pickMigration();
 
