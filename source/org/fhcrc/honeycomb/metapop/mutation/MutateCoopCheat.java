@@ -58,10 +58,10 @@ public class MutateCoopCheat implements MutationRule {
                 int evo_coop_muts = 0;
                 int evo_cheat_muts = 0;
 
-                Subpopulation anc_coop = pop.getSubpopById("anc_coop");
-                Subpopulation evo_coop = pop.getSubpopById("evo_coop");
-                Subpopulation anc_cheat = pop.getSubpopById("anc_cheat");
-                Subpopulation evo_cheat = pop.getSubpopById("evo_cheat");
+                Subpopulation anc_coop = pop.getSubpopById("coop_0.450_10.0");
+                Subpopulation evo_coop = pop.getSubpopById("coop_0.315_1.0");
+                Subpopulation anc_cheat = pop.getSubpopById("cheat_0.540_10.0");
+                Subpopulation evo_cheat = pop.getSubpopById("cheat_0.378_1.0");
 
                 if (coop_to_cheat > 0.0) {
                     anc_coop_muts = rng.getNextBinomial(
