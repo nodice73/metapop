@@ -98,7 +98,7 @@ public class MutateEachGrowth implements MutationRule {
 
     @Override
     public String toString() {
-        return String.format("%s, mut_rate=%.2e",
+        return String.format("%s, mut_rate=%.2e, coop_to_cheat_rate=%.2e",
                              this.getClass().getSimpleName(), mut_rate, coop_to_cheat_rate);
     }
 }
