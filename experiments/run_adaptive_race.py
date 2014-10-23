@@ -121,13 +121,14 @@ class AdaptiveRaceParams(object):
 
     def run(self, reps):
         self.prep(reps)
+        max_queue = 75
         if self.sbatch:
             sent = 0
             n_runs = len(self.commands)
             for cmd in self.commands:
                 while True:
                     queue = check_queue()
-                    if queue > 100:
+                    if queue > max_queue:
                         print ("queue is {}. {} of {} jobs sent."
                                " Sleeping...".format(queue, sent, n_runs))
                         sys.stdout.flush()
@@ -176,7 +177,7 @@ class AdaptiveRaceParams(object):
         cmds = []
         template = '{0}_{1}_n={2}_mutant-freq={3}_mig={15}_coop-release={4}_' \
                    'km-adv={9}_death-adv={10}_' \
-                   'coop-freq={6}_size={13}_occ={14}_u={17}'
+                   'coop-freq={6}_size={13}_occ={14}_u={16}'
 
         for arg in args:
             seeds = []
@@ -221,6 +222,13 @@ class AdaptiveRace(AdaptiveRaceParams):
         super(AdaptiveRace, self).__init__()
         self.migration_ranges = ['global']
         self.output='no_dilution'
+
+class CoopToCheat(AdaptiveRace):
+    def __init__(self):
+        super(CoopToCheat, self).__init__()
+        self.coop_to_cheat = [1e-7]
+        self.frac_occupied = [0.25, 0.5, 0.90, 0.97, 1]
+        self.output = ''
 
 class NoMut(AdaptiveRace):
     def __init__(self):
