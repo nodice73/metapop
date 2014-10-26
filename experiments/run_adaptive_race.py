@@ -111,7 +111,7 @@ class AdaptiveRaceParams(object):
             if k != "params":
                 if (isinstance(v, list) and len(v)>0 and 
                     isinstance(v[0], Number)):
-                    self.params[k] = [repr(i) for i in v]
+                    self.params[k] = ['{:.6g}'.format(i) for i in v]
                 else:
                     self.params[k] = v
         
@@ -320,7 +320,7 @@ class Test(AdaptiveRaceParams):
         self.coop_freq = [0.99999]
         self.frac_occupied = [0.5]
         #self.seeds = [str(i) for i in '1'*self.n_seeds]
-        #self.save_every = [1]
+        self.save_every = [10]
         self.coop_to_cheat = [1e-7];
         self.hours = [20000]
 
