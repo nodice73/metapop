@@ -106,9 +106,15 @@ class AdaptiveRaceParams(object):
         self.cp = ('-cp .:$CLASSPATH:{0}/lib/commons-math.jar:'
                    '{0}/{1}').format(self.code_base, self.class_base)
 
-        self.params = dict((k, string(v)) for (k,v) in
-                           self.__dict__.iteritems() if k != "params")
-
+        self.params = {}
+        for (k, v) in self.__dict__.items():
+            if k != "params":
+                if (isinstance(v, list) and len(v)>0 and 
+                    isinstance(v[0], Number)):
+                    self.params[k] = [repr(i) for i in v]
+                else:
+                    self.params[k] = v
+        
     def prep(self, reps):
         subprocess.call(['ant', '-f', '../build.xml'])
         for i in range(reps):
@@ -309,8 +315,9 @@ class Test(AdaptiveRaceParams):
     def __init__(self):
         super(Test, self).__init__()
         self.migration_ranges = ['global']
-        self.mutant_freqs = [2e-5]
+        self.mutant_freqs = [0]
         self.migration_rates = [0]
+        self.coop_freq = [0.99999]
         self.frac_occupied = [0.5]
         #self.seeds = [str(i) for i in '1'*self.n_seeds]
         #self.save_every = [1]
@@ -344,5 +351,5 @@ if __name__ == "__main__":
     #ps = VeryLowRelease()
     #ps = LowOcc()
     #ps = HighOcc()
-    ps.test(1)
-    #ps.run(1)
+    #ps.test(1)
+    ps.run(1)
