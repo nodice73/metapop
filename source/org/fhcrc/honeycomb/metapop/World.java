@@ -212,6 +212,7 @@ public class World implements StepProvider, Saveable {
     public MutationRule getMutationRule() { return mutation_rule; }
     public MigrationRule getMigrationRule() { return migration_rule; }
     public DilutionRule getDilutionRule() { return dilution_rule; }
+    public StopCondition getStopCondition() { return stop_condition; }
     public int getSize() { return total_size; }
     public int getTimestepScale() { return timestep_scale; }
     public int getMaxRow() { return rows; }
@@ -354,6 +355,7 @@ public class World implements StepProvider, Saveable {
                           "\t<dilution_rule>%s</dilution_rule>%n" +
                           "\t<mutation_rule>%s</mutation_rule>%n" +
                           "\t<migration_rule>%s</migration_rule>%n" +
+                          "\t<stop_condition>%s</stop_condition>%n" +
                           "</world>%n"
                           ,
                           getTimestepScale(),
@@ -364,7 +366,8 @@ public class World implements StepProvider, Saveable {
                           getEnvChanger(),
                           getDilutionRule(),
                           getMutationRule(),
-                          getMigrationRule()
+                          getMigrationRule(),
+                          getStopCondition()
                         );
         initialization_data.put("filename", filename);
         initialization_data.put("info", info);
