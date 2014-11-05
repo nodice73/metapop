@@ -49,6 +49,7 @@ import org.fhcrc.honeycomb.metapop.migration.IndividualMigration;
 import org.fhcrc.honeycomb.metapop.stop.StopCondition;
 import org.fhcrc.honeycomb.metapop.stop.ExtinctOrGrowingStop;
 import org.fhcrc.honeycomb.metapop.stop.CoopCheatExtinctStop;
+import org.fhcrc.honeycomb.metapop.stop.CoopExtinctStop;
 
 import java.io.File;
 import java.util.Arrays;
@@ -171,7 +172,11 @@ public abstract class AdaptiveRace {
         location_picker = new UniqueRandomPicker(rows, cols, location_rng);
 
         if (initial_coop_freq < 1.0 && initial_coop_freq > 0.0) {
-            stop_condition = new CoopCheatExtinctStop();
+            if (coop_to_cheat_mutation_rate > 0) {
+                stop_condition = new CoopExtinctStop();
+            } else {
+                stop_condition = new CoopCheatExtinctStop();
+            }
         } else {
             int min_pop_size = 1000;
             stop_condition = new ExtinctOrGrowingStop(min_pop_size);

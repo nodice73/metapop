@@ -20,5 +20,6 @@ output_test
 # svn
 .svn
 
+*.out
 *.pdf
 *.tab

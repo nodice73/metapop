@@ -106,9 +106,15 @@ class AdaptiveRaceParams(object):
         self.cp = ('-cp .:$CLASSPATH:{0}/lib/commons-math.jar:'
                    '{0}/{1}').format(self.code_base, self.class_base)
 
-        self.params = dict((k, string(v)) for (k,v) in
-                           self.__dict__.iteritems() if k != "params")
-
+        self.params = {}
+        for (k, v) in self.__dict__.items():
+            if k != "params":
+                if (isinstance(v, list) and len(v)>0 and 
+                    isinstance(v[0], Number)):
+                    self.params[k] = ['{:.6g}'.format(i) for i in v]
+                else:
+                    self.params[k] = v
+        
     def prep(self, reps):
         subprocess.call(['ant', '-f', '../build.xml'])
         for i in range(reps):
@@ -121,13 +127,14 @@ class AdaptiveRaceParams(object):
 
     def run(self, reps):
         self.prep(reps)
+        max_queue = 75
         if self.sbatch:
             sent = 0
             n_runs = len(self.commands)
             for cmd in self.commands:
                 while True:
                     queue = check_queue()
-                    if queue > 100:
+                    if queue > max_queue:
                         print ("queue is {}. {} of {} jobs sent."
                                " Sleeping...".format(queue, sent, n_runs))
                         sys.stdout.flush()
@@ -176,7 +183,7 @@ class AdaptiveRaceParams(object):
         cmds = []
         template = '{0}_{1}_n={2}_mutant-freq={3}_mig={15}_coop-release={4}_' \
                    'km-adv={9}_death-adv={10}_' \
-                   'coop-freq={6}_size={13}_occ={14}_u={17}'
+                   'coop-freq={6}_size={13}_occ={14}_u={16}'
 
         for arg in args:
             seeds = []
@@ -221,6 +228,13 @@ class AdaptiveRace(AdaptiveRaceParams):
         super(AdaptiveRace, self).__init__()
         self.migration_ranges = ['global']
         self.output='no_dilution'
+
+class CoopToCheat(AdaptiveRace):
+    def __init__(self):
+        super(CoopToCheat, self).__init__()
+        self.coop_to_cheat = [1e-7]
+        self.frac_occupied = [0.25, 0.5, 0.90, 0.97, 1]
+        self.output = ''
 
 class NoMut(AdaptiveRace):
     def __init__(self):
@@ -288,7 +302,7 @@ class AncReleaseTest(ReleaseTest):
     def __init__(self):
         super(AncReleaseTest, self).__init__()
         self.mutant_freqs = [0]
-        self.coop_release = range(1000, 5000, 100)
+        self.coop_release = [x/10.0 for x in range(31, 100, 3)]
         self.output = 'release_test/anc'
 
 class EvoReleaseTest(ReleaseTest):
@@ -301,12 +315,14 @@ class Test(AdaptiveRaceParams):
     def __init__(self):
         super(Test, self).__init__()
         self.migration_ranges = ['global']
-        self.mutant_freqs = [2e-5]
+        self.mutant_freqs = [0]
         self.migration_rates = [0]
+        self.coop_freq = [0.99999]
         self.frac_occupied = [0.5]
         #self.seeds = [str(i) for i in '1'*self.n_seeds]
-        self.save_every = [1]
-        self.hours = [1000]
+        self.save_every = [10]
+        self.coop_to_cheat = [1e-7];
+        self.hours = [20000]
 
 
 class Benchmark(AdaptiveRaceParams):
@@ -326,8 +342,8 @@ class Benchmark(AdaptiveRaceParams):
 
 if __name__ == "__main__":
     #ps = Benchmark()
-    #ps = Test()
-    ps = AncReleaseTest()
+    ps = Test()
+    #ps = AncReleaseTest()
     #ps = EvoReleaseTest()
     #ps = AdaptiveRace()
     #ps = NoMut()
@@ -335,5 +351,5 @@ if __name__ == "__main__":
     #ps = VeryLowRelease()
     #ps = LowOcc()
     #ps = HighOcc()
-    #ps.test(30)
+    #ps.test(1)
     ps.run(1)
