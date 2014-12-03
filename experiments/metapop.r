@@ -670,6 +670,7 @@ plot.growth.vs.release <- function(dat, max.release, device="x11",
 }
 
 plot.survival.freqs <- function(dat, device="x11", name) {
+    library(binom)
     graphics.off()
     min.val <- 0
     max.val <- 100
@@ -678,19 +679,12 @@ plot.survival.freqs <- function(dat, device="x11", name) {
 
     h <- hist(dat$coop.freq.mean, breaks=seq(0,1,0.1), plot=FALSE)
     str(h)
-    freqs <- 100 * h$counts / sum(h$counts)
-    error.counts <- sqrt(h$counts)
-    error.freqs <- (freqs/h$counts) * error.counts
-    error.freqs[freqs<min.val] <- NA
-    freqs.upper <- freqs + 2*error.freqs
-    freqs.lower <- freqs - 2*error.freqs
-    freqs.lower[freqs.lower<=0] <- min.val
-
-    freqs[freqs<min.val] <- min.val
+    bnm <- binom.wilson(h$counts, sum(h$counts))
     default.plot(h=10,w=20,device=device,name=name)
-    bp <- barplot(freqs, log="", names.arg=h$mids, axes=FALSE, ann=FALSE,
-                  axisnames=FALSE, space=spacing, ylim=c(min.val,max.val))
-    arrows(bp, freqs.lower, bp, freqs.upper, code=3, length=0.1, angle=90)
+    bp <- barplot(100*bnm$mean, log="", names.arg=h$mids, 
+                  axes=FALSE, ann=FALSE, axisnames=FALSE, space=spacing, 
+                  ylim=c(min.val,max.val))
+    arrows(bp, 100*bnm$lower, bp, 100*bnm$upper, code=3, length=0.1, angle=90)
     axis(1, lwd=par()$lwd, cex.axis=1.5, at=bp, labels=h$mids)
     axis(2, lwd=par()$lwd, las=2, cex.axis=1.5)
     box()
