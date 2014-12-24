@@ -83,7 +83,7 @@ plot.folder <- function(folder, save.path, run.pattern, device="png", plot.all=F
 
     folders <- list.files(folder, full.names=TRUE)
     folders <- subset(folders, grepl("global|local", folders))
-    
+
     runs <- if (missing(run.pattern)) {
         # only taking first run if multiple reps are present.
         lapply(folders, function (x) list.files(x, full.names=TRUE))
@@ -96,8 +96,10 @@ plot.folder <- function(folder, save.path, run.pattern, device="png", plot.all=F
     cnt <- 1
     plotted <- list.files(save.path)
     for (cond in runs) {
-        cond.full.path <- paste0('fig/', cond)
-        if (!exists(cond.full.path)) { dir.create(cond.full.path) }
+        cond.full.path <- file.path('fig', cond[1])
+        expr <- gregexpr('/', cond.full.path)[[1]]
+        full.path <- strtrim(cond.full.path, expr[length(expr)])
+        if (!file.exists(full.path)) { dir.create(full.path) }
         for (run in cond) {
             cat(cnt, "of", n.runs, "\n")
             if (skip.completed) {
@@ -109,7 +111,7 @@ plot.folder <- function(folder, save.path, run.pattern, device="png", plot.all=F
             }
             
             formals(plot.timepoints) <- c(list(folder=run, device=device,
-                                               save.path=cond.full.path,
+                                               save.path=full.path,
                                                plot.all=plot.all,
                                                save.movie=FALSE,
                                                plot.two.types=plot.two.types,
@@ -874,7 +876,6 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                            max.runs=30, pattern=NULL, min.hr=2e4, ...)
 {
     graphics.off()
-    browser()
     name.match <- paste("^.*/(.*)\\.",data.ext,sep="")
 
     conditions <- list.files(folder, full.names=TRUE, pattern=pattern)
@@ -989,7 +990,7 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                 if (coop.freqs[i] == 0 || is.nan(coop.freqs[i])) {
                     coop.freqs <- 0
                     break
-                } else if (coop.freqs[i] == 1) {
+                } else if (coop.freqs[i] == 1 && res[row.idx,]$'coop-to-cheat' == 0) {
                     coop.freqs <- 1
                     break
                 }
