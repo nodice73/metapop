@@ -10,7 +10,7 @@ import org.fhcrc.honeycomb.metapop.fitness.MonodCalculator;
 
 import org.fhcrc.honeycomb.metapop.mutation.MutationRule;
 import org.fhcrc.honeycomb.metapop.mutation.MutateCoopCheat;
-import org.fhcrc.honeycomb.metapop.mutation.MutateEachGrowth;
+import org.fhcrc.honeycomb.metapop.mutation.MutateAdaptive;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -103,7 +103,7 @@ public class MutationTest {
             int cheat_change = Math.abs(cheat_before-cheat_after);
 
             MutationRule mutate_each_growth = 
-                new MutateEachGrowth(0, coop_to_cheat, 0, rng);
+                new MutateAdaptive(0, coop_to_cheat, 0, rng);
 
             mutate_each_growth.mutate(pops_new);
 
@@ -158,7 +158,7 @@ public class MutationTest {
             int cheat_change = Math.abs(cheat_before-cheat_after);
 
             MutationRule mutate_cheats = 
-                new MutateEachGrowth(0, 0, cheat_to_coop, rng);
+                new MutateAdaptive(0, 0, cheat_to_coop, rng);
 
             mutate_cheats.mutate(pops_new);
 
