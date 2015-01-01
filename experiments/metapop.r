@@ -589,10 +589,10 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
         runs <- subset(runs, file.info(runs)$isdir)
         max.hrs <- var.list[["hrs"]][cond.idx]
         n.init <- var.list[["n"]][cond.idx]
-        if (var.list[["u"]][cond.idx] > 0) {
-            cond.idx <- cond.idx + 1
-            next
-        }
+        #if (var.list[["u"]][cond.idx] > 0) {
+        #    cond.idx <- cond.idx + 1
+        #    next
+        #}
 
         cat("\nProcessing", condition, "\n")
         cat(cond.idx, "of", n.conditions, "conditions\n")
