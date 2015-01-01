@@ -849,17 +849,6 @@ plot.summary <- function(dat, device="x11", save.to=NULL, jit=NULL, gap=2,
     #print(surf)
 }
 
-rerun <- function(set, run.id, program, hours, every) {
-    java <- paste('time java -Xmx1000m -server',
-                  '-cp .:$CLASSPATH:/home/ajwaite/Documents/Code/Java/metapop2/lib/commons-math.jar:/home/ajwaite/Documents/Code/Java/metapop2/build/classes/framework',
-                 'org.fhcrc.honeycomb.metapop.experiment.')
-
-    java <- paste0(java, program)
-    print(java)
-    run <- generate.run(set[set$run.id==run.id,])
-    #system(paste('echo', java), wait=FALSE)
-}
-
 plot.survival <- function(dat, split2="occ", device="x11", 
                           save.to=".", cutoff=0.1, min.hr=2e4, ...)
 {
