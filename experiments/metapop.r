@@ -468,6 +468,18 @@ plot.growth.vs.release <- function(dat, max.release, device="x11",
     print(confint(fit))
 }
 
+plot.all.survival.freqs <- function(dat, dev="x11") {
+    plot.survival.freqs(subset(dat, mig==0 & occ==1 & 
+                               `mutant-freq`==0), 
+                        name="occ=1_mig=0", dev=dev)
+    plot.survival.freqs(subset(dat, mig==1e-7 & occ==1 & 
+                               `mutant-freq`==0), 
+                        name="occ=1_mig=1e-7", dev=dev)
+    plot.survival.freqs(subset(dat, mig==1e-7 & occ==0.5 & 
+                               `mutant-freq`==0), 
+                        name="occ=0.5_mig=1e-7", dev=dev)
+}
+
 plot.survival.freqs <- function(dat, device="x11", name) {
     library(binom)
     graphics.off()
