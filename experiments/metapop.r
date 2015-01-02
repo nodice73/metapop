@@ -487,8 +487,12 @@ plot.survival.freqs <- function(dat, device="x11", name) {
     max.val <- 100
     spacing <- 0
     survival.cutoff <- 0.1
+    breaks <- seq(-0.1, 1, 0.1)
+    labs <- c(0, "(0, 0.1]", "(0.1, 0.2]", "(0.2, 0.3]", "(0.3, 0.4]",
+              "(0.4, 0.5]", "(0.5, 0.6]", "(0.6, 0.7]", "(0.7, 0.8]",
+              "(0.8, 0.9]", "(0.9, 1]")
 
-    h <- hist(dat$coop.freq.mean, breaks=seq(0,1,0.1), plot=FALSE)
+    h <- hist(dat$coop.freq.mean, breaks=breaks, plot=FALSE)
     str(h)
     bnm <- binom.wilson(h$counts, sum(h$counts))
     default.plot(h=10,w=20,device=device,name=name)
@@ -496,13 +500,12 @@ plot.survival.freqs <- function(dat, device="x11", name) {
                   axes=FALSE, ann=FALSE, axisnames=FALSE, space=spacing, 
                   ylim=c(min.val,max.val))
     arrows(bp, 100*bnm$lower, bp, 100*bnm$upper, code=3, length=0.1, angle=90)
-    axis(1, lwd=par()$lwd, cex.axis=1.5, at=bp, labels=h$mids)
+    axis(1, lwd=par()$lwd, cex.axis=1.5, at=bp, labels=labs, las=2)
     axis(2, lwd=par()$lwd, las=2, cex.axis=1.5)
     box()
-    mtext(side=1, text="Cooperator frequency (midpoint of bin)",
-          line=3.0, cex=3.5)
+    mtext(side=1, text="Cooperator frequency", line=3.0, cex=3.5)
     mtext(side=2, text="Occurrence (%)", line=4, cex=3.5)
-    abline(v=survival.cutoff*10+(spacing*1.5), lty=2, col="red", lwd=5)
+    abline(v=survival.cutoff*20+(spacing*1.5), lty=2, col="red", lwd=5)
     title(name)
 
     if (device != "x11") dev.off()
