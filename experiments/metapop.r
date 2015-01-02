@@ -801,7 +801,7 @@ plot.survival.freqs <- function(dat, device="x11", name) {
     spacing <- 0
     survival.cutoff <- 0.1
 
-    h <- hist(dat$coop.freq.mean, breaks=seq(0,1,0.1), plot=FALSE)
+    h <- hist(dat$coop.freq.mean, breaks=c(0, seq(0,1,0.1)), plot=FALSE)
     str(h)
     bnm <- binom.wilson(h$counts, sum(h$counts))
     default.plot(h=10,w=20,device=device,name=name)
@@ -815,7 +815,8 @@ plot.survival.freqs <- function(dat, device="x11", name) {
     mtext(side=1, text="Cooperator frequency (midpoint of bin)",
           line=3.0, cex=3.5)
     mtext(side=2, text="Occurrence (%)", line=4, cex=3.5)
-    abline(v=survival.cutoff*10+(spacing*1.5), lty=2, col="red", lwd=5)
+    abline(v=1+(spacing*1.5), lty=1, col="black", lwd=5)
+    abline(v=survival.cutoff*10+(spacing*1.5)+1, lty=2, col="red", lwd=5)
     title(name)
 
     if (device != "x11") dev.off()
