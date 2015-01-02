@@ -165,7 +165,7 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
         pret <- pretty(hrs)
         pret.lab <- if (short) pret else pret/1000
 
-        x.lab <- if (short) "Time (hrs)" else "Time (10^3 x hrs)"
+        x.lab <- if (short) "Time (hrs)" else "Time (thousands of hrs)"
         log.x.lab <- "Time (hrs)"
         title(main=plot.name,cex.main=0.3)
         mtext(side=2, text=y.lab, line=ylab.dist, cex=mtext.cex)
