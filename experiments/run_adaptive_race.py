@@ -289,13 +289,13 @@ class AncReleaseTest(ReleaseTest):
     def __init__(self):
         super(AncReleaseTest, self).__init__()
         self.mutant_freqs = [0]
-        self.output = 'corrected_release_test/anc'
+        self.output = 'release_test/anc'
 
 class EvoReleaseTest(ReleaseTest):
     def __init__(self):
         super(EvoReleaseTest, self).__init__()
         self.mutant_freqs = [1]
-        self.output = 'corrected_release_test/evo'
+        self.output = 'release_test/evo'
 
 class Test(AdaptiveRaceParams):
     def __init__(self):
