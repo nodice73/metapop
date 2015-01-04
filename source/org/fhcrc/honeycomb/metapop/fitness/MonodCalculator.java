@@ -32,7 +32,7 @@ public class MonodCalculator extends FitnessCalculator {
     private double d;
 
     public MonodCalculator(double vmax, double km, double d, double scale) {
-        this.vmax = (vmax+d)/scale;
+        this.vmax = vmax/scale;
         this.km   = km;
         this.d    = d/scale;
     }
