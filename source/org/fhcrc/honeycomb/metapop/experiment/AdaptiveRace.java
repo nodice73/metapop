@@ -129,6 +129,7 @@ public abstract class AdaptiveRace {
 
     private double base_growth_rate = StrictMath.log(2)/2;
     private double base_death_rate = 0.1;
+    private double base_birth_rate = base_growth_rate + base_death_rate;
     private double base_km;
     
     // Cheater advantage.
@@ -238,46 +239,45 @@ public abstract class AdaptiveRace {
                                                ") out of range.");
         }
 
-
         // Ancestor cooperator.
         final String anc_coop_id = "anc_coop";
-        double co_vmax = base_growth_rate;
-        double co_km   = base_km;
-        double co_d    = base_death_rate;
+        double co_Vb = base_birth_rate;
+        double co_km = base_km;
+        double co_d  = base_death_rate;
         FitnessCalculator anc_coop_fc = 
             new MonodCalculator(co_vmax, co_km, co_d, TIMESTEP_SCALE);
 
         // Ancestor cheater.
         final String anc_cheat_id = "anc_cheat";
-        double ch_vmax = alpha*co_vmax;
+        double ch_Vb = alpha*co_Vb;
         double ch_km = co_km;
-        double ch_d = co_d/alpha;
+        double ch_d  = co_d/alpha;
         FitnessCalculator anc_cheat_fc = 
-            new MonodCalculator(ch_vmax, ch_km, ch_d, TIMESTEP_SCALE);
+            new MonodCalculator(ch_Vb, ch_km, ch_d, TIMESTEP_SCALE);
 
         // Evolved cooperator.
         final String evo_coop_id = "evo_coop";
-        double eco_vmax = theta*co_vmax;
-        double eco_km   = co_km/delta1;
-        double eco_d    = co_d/delta2;
+        double eco_Vb = theta*co_Vb;
+        double eco_km = co_km/delta1;
+        double eco_d  = co_d/delta2;
         FitnessCalculator evo_coop_fc = 
-            new MonodCalculator(eco_vmax, eco_km, eco_d, TIMESTEP_SCALE);
+            new MonodCalculator(eco_Vb, eco_km, eco_d, TIMESTEP_SCALE);
 
         // Evolved cheater.
         final String evo_cheat_id = "evo_cheat";
-        double ech_vmax = theta*ch_vmax;
-        double ech_km   = eco_km;
-        double ech_d    = eco_d/alpha;
+        double ech_Vb = theta*ch_Vb;
+        double ech_km = eco_km;
+        double ech_d  = eco_d/alpha;
         FitnessCalculator evo_cheat_fc = 
-            new MonodCalculator(ech_vmax, ech_km, ech_d, TIMESTEP_SCALE);
+            new MonodCalculator(ech_Vb, ech_km, ech_d, TIMESTEP_SCALE);
 
-        initial_n_pops = rounded(frac_occupied*rows*cols);
-        int initial_coops = rounded(initial_pop_size*initial_coop_freq);
+        initial_n_pops     = rounded(frac_occupied*rows*cols);
+        int initial_coops  = rounded(initial_pop_size*initial_coop_freq);
         int initial_cheats = rounded(initial_pop_size*(1-initial_coop_freq));
 
-        int initial_anc_coops = rounded(initial_coops*(1-mutant_freq));
+        int initial_anc_coops  = rounded(initial_coops*(1-mutant_freq));
         int initial_anc_cheats = rounded(initial_cheats*(1-mutant_freq));
-        int initial_evo_coops = rounded(initial_coops*mutant_freq);
+        int initial_evo_coops  = rounded(initial_coops*mutant_freq);
         int initial_evo_cheats = rounded(initial_cheats*mutant_freq);
 
         Subpopulation anc_coop = new Subpopulation(initial_anc_coops,
