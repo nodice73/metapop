@@ -280,21 +280,22 @@ class ReleaseTest(AdaptiveRaceParams):
         self.save_every = [1]
         self.coop_freq = [1]
         self.coop_release = ([x + y/20.0 for x in range (0,3) 
-                                for y in range(0,20)] + range(3,100) +
-                                range(120, 1000, 20))
+                                for y in range(0,20)]
+                             + [x/10.0 for x in range(31, 100, 3)]
+                             + range(3,100) 
+                             + range(120, 1000, 20))
 
 class AncReleaseTest(ReleaseTest):
     def __init__(self):
         super(AncReleaseTest, self).__init__()
         self.mutant_freqs = [0]
-        self.coop_release = [x/10.0 for x in range(31, 100, 3)]
-        self.output = 'release_test/anc'
+        self.output = 'corrected_release_test/anc'
 
 class EvoReleaseTest(ReleaseTest):
     def __init__(self):
         super(EvoReleaseTest, self).__init__()
         self.mutant_freqs = [1]
-        self.output = 'release_test/evo'
+        self.output = 'corrected_release_test/evo'
 
 class Test(AdaptiveRaceParams):
     def __init__(self):
@@ -328,7 +329,7 @@ class Benchmark(AdaptiveRaceParams):
 if __name__ == "__main__":
     #ps = Benchmark()
     #ps = Test()
-    #ps = AncReleaseTest()
+    ps = AncReleaseTest()
     #ps = EvoReleaseTest()
     #ps = AdaptiveRace()
     #ps = NoMut()
@@ -338,6 +339,6 @@ if __name__ == "__main__":
     #ps = HighOcc()
     #ps = CoopToCheat()
     #ps = CoopToCheatAddnl()
-    ps = LowRelease()
+    #ps = LowRelease()
     #ps.test(1)
-    ps.run(30)
+    ps.run(1)
