@@ -493,7 +493,8 @@ plot.survival.freqs <- function(dat, device="x11", name) {
               "(0.8, 0.9]", "(0.9, 1]")
 
     h <- hist(dat$coop.freq.mean, breaks=breaks, plot=FALSE)
-    str(h)
+    print(h$breaks)
+    print(h$counts)
     bnm <- binom.wilson(h$counts, sum(h$counts))
     default.plot(h=10,w=20,device=device,name=name)
     bp <- barplot(100*bnm$mean, log="", names.arg=h$mids, 
@@ -546,6 +547,14 @@ plot.survival.prob <- function(dat,device="x11", p, k, x,
     print(fit)
     print(confint(fit))
     if (device != "x11") dev.off()
+}
+
+growth.curve <- function(V, K, d, alpha, theta, delta1, delta2, Smin, Smax,
+                         ...)
+{
+    x11()
+    curve((alpha*theta*V*x/((K/delta1)+x)) - d/(alpha*delta2), from=Smin,
+          to=Smax, ...)
 }
 
 survive2release <- function(p.max, k, shift, p) {
