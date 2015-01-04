@@ -236,6 +236,13 @@ class CoopToCheat(AdaptiveRace):
         self.frac_occupied = [0.25, 0.5, 0.90, 0.97, 1]
         self.output = ''
 
+class CoopToCheatAddnl(CoopToCheat):
+    def __init__(self):
+        super(CoopToCheatAddnl, self).__init__()
+        self.frac_occupied = [1]
+        self.mutant_freqs = [0]
+        self.migration_rates = [0, 1e-6, 1e-7]
+
 class NoMut(AdaptiveRace):
     def __init__(self):
         super(NoMut, self).__init__()
@@ -249,39 +256,17 @@ class LowOcc(AdaptiveRace):
         self.output='no_dilution/keep'
         #self.frac_occupied = [y/100.0 for y in range(26, 30)]
 
-
-class OtherConds(AdaptiveRace):
+class OtherConds(CoopToCheat):
     def __init__(self):
         super(OtherConds, self).__init__()
-        self.migration_ranges = ['global']
         self.frac_occupied = [0.5]
         self.mutant_freqs = [0, 2e-5, 2e-4, 2e-3]
-
-class HighOcc(OtherConds):
-    def __init__(self):
-        super(HighOcc, self).__init__()
-        self.frac_occupied = [0.99, 0.97, 0.90]
-
-class CheaterTitration(OtherConds):
-    def __init__(self):
-        super(CheaterTitration, self).__init__()
-        self.mutant_freqs = [1e-4]
-        self.coop_freq = [0.1]
-        self.migration_rates = [0]
-        self.output = 'no_dilution/cheater_titration'
 
 class LowRelease(OtherConds):
     def __init__(self):
         super(LowRelease, self).__init__()
-        self.coop_release = [0.457]
-        self.mutant_freqs = [2e-3]
-        self.output = 'no_dilution/evo_limiting_release/beta=0.457'
-
-class VeryLowRelease(OtherConds):
-    def __init__(self):
-        super(VeryLowRelease, self).__init__()
-        self.coop_release = [0.00172]
-        self.output = 'no_dilution/evo_limiting_release_retry/beta=0.0017'
+        self.coop_release = [0.457, 0.00172]
+        self.output = 'CoopToCheat/LowRelease'
 
 class ReleaseTest(AdaptiveRaceParams):
     def __init__(self):
@@ -342,7 +327,7 @@ class Benchmark(AdaptiveRaceParams):
 
 if __name__ == "__main__":
     #ps = Benchmark()
-    ps = Test()
+    #ps = Test()
     #ps = AncReleaseTest()
     #ps = EvoReleaseTest()
     #ps = AdaptiveRace()
@@ -351,5 +336,8 @@ if __name__ == "__main__":
     #ps = VeryLowRelease()
     #ps = LowOcc()
     #ps = HighOcc()
+    #ps = CoopToCheat()
+    #ps = CoopToCheatAddnl()
+    ps = LowRelease()
     #ps.test(1)
-    ps.run(1)
+    ps.run(30)
