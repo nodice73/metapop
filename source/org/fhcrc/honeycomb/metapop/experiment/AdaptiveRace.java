@@ -127,7 +127,7 @@ public abstract class AdaptiveRace {
     private double coop_release_rate;
     private double cheat_release_rate = 0.0;
 
-    private double base_birth_rate = StrictMath.log(2)/2;
+    private double base_growth_rate = StrictMath.log(2)/2;
     private double base_death_rate = 0.1;
     private double base_km;
     
@@ -241,7 +241,7 @@ public abstract class AdaptiveRace {
 
         // Ancestor cooperator.
         final String anc_coop_id = "anc_coop";
-        double co_vmax = base_birth_rate;
+        double co_vmax = base_growth_rate;
         double co_km   = base_km;
         double co_d    = base_death_rate;
         FitnessCalculator anc_coop_fc = 
