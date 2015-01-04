@@ -245,7 +245,7 @@ public abstract class AdaptiveRace {
         double co_km = base_km;
         double co_d  = base_death_rate;
         FitnessCalculator anc_coop_fc = 
-            new MonodCalculator(co_vmax, co_km, co_d, TIMESTEP_SCALE);
+            new MonodCalculator(co_Vb, co_km, co_d, TIMESTEP_SCALE);
 
         // Ancestor cheater.
         final String anc_cheat_id = "anc_cheat";
