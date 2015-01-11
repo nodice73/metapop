@@ -341,8 +341,8 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
     gc()
     if (write.data) {
         folder.name <- basename(dirname(folder))
-        write.table(concat, file=paste(folder.name,".tab",sep=""), sep="\t",
-                    row.names=FALSE,quote=FALSE)
+        save.path <- file.path(save.path, paste0(folder.name,".tab"))
+        write.table(concat, save.path, sep="\t", row.names=FALSE,quote=FALSE)
     }
     cat(extinct, "extinctions.\n\n")
     data.frame(run.id=run.id, release.rate=info$release.rate*info$ts.scale,
