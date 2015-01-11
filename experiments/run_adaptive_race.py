@@ -295,7 +295,7 @@ class EvoReleaseTest(ReleaseTest):
     def __init__(self):
         super(EvoReleaseTest, self).__init__()
         self.mutant_freqs = [1]
-        self.output = 'release_test/evo'
+        self.output = 'corrected_release_test/evo'
 
 class Test(AdaptiveRaceParams):
     def __init__(self):
@@ -329,8 +329,8 @@ class Benchmark(AdaptiveRaceParams):
 if __name__ == "__main__":
     #ps = Benchmark()
     #ps = Test()
-    ps = AncReleaseTest()
-    #ps = EvoReleaseTest()
+    #ps = AncReleaseTest()
+    ps = EvoReleaseTest()
     #ps = AdaptiveRace()
     #ps = NoMut()
     #ps = LowRelease()
