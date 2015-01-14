@@ -549,12 +549,37 @@ plot.survival.prob <- function(dat,device="x11", p, k, x,
     if (device != "x11") dev.off()
 }
 
-growth.curve <- function(V, K, d, alpha, theta, delta1, delta2, Smin, Smax,
-                         ...)
+growth.curves <- function(Vg, K, d, alpha, theta, delta1, delta2, Smin, Smax,
+                          device="x11", save.path=".", ...)
 {
-    x11()
-    curve((alpha*theta*V*x/((K/delta1)+x)) - d/(alpha*delta2), from=Smin,
-          to=Smax, ...)
+    default.plot(w=square.plot.dim, h=square.plot.dim, device,
+                 file.path(save.path, "growth_curves"))
+    d_anc_coop  <- 0.1
+    d_anc_cheat <- d_anc_coop/alpha
+    d_evo_coop  <- d_anc_coop/delta2
+    d_evo_cheat <- d_anc_coop/(alpha*delta2)
+
+    Vg <- log(2)/2
+    Vb_anc_coop  <- Vg + d_anc_coop
+    Vb_anc_cheat <- alpha*Vg + d_anc_cheat
+    Vb_evo_coop  <- theta*Vg + d_evo_coop
+    Vb_evo_cheat <- alpha*theta*Vg + d_evo_cheat
+
+    curve(Vb_anc_coop*x/(K + x) - d_anc_coop, from=Smin, to=Smax, 
+          col="red", xlab="Resource concentration", 
+          ylab="Net growth rate (/hr)", axes=FALSE, xaxs="i", ...)
+    curve(Vb_anc_cheat*x/(K + x) - d_anc_cheat, from=Smin, to=Smax, 
+          col="blue", add=TRUE, ...)
+    curve(Vb_evo_coop*x/(K/delta1 + x) - d_evo_coop, from=Smin, to=Smax, 
+          col="magenta", add=TRUE, ...)
+    curve(Vb_evo_cheat*x/(K/delta1 + x) - d_evo_cheat, from=Smin, to=Smax, 
+          col="cyan", add=TRUE, ...)
+
+    axis(1, cex=1, lwd.ticks=par()$lwd)
+    axis(2, las=2, cex=1, lwd.ticks=par()$lwd)
+    box()
+
+    if (device != "x11") dev.off()
 }
 
 survive2release <- function(p.max, k, shift, p) {
