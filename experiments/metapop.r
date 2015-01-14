@@ -552,6 +552,7 @@ plot.survival.prob <- function(dat,device="x11", p, k, x,
 growth.curves <- function(Vg, K, d, alpha, theta, delta1, delta2, Smin, Smax,
                           device="x11", save.path=".", ...)
 {
+    graphics.off()
     default.plot(w=square.plot.dim, h=square.plot.dim, device,
                  file.path(save.path, "growth_curves"))
     d_anc_coop  <- 0.1
