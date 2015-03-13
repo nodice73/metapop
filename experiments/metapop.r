@@ -185,8 +185,11 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
         }
     }
 
-    total.cell.lab <- if (identical(row.col,"total")) {
+    total.cell.lab <- if (identical(row.col,"total") && 
+                          identical(plot.type, "cells")) {
         "Total individuals"
+    } else if (identical(plot.type, "freq")) {
+        "Cooperator frequency"
     } else if (show.resource) {
         "Individuals and resource (units)"
     } else {
@@ -204,6 +207,9 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
             plot(range(hrs), range(y.range), type="n", log="y",
                  axes=FALSE, ann=FALSE)
             setup.plot(total.cell.lab, title.name, FALSE)
+        } else if (plot.type=="freq") {
+            plot(range(hrs), c(0,1), type="n", axes=FALSE, ann=FALSE)
+            setup.plot("Cooperator freq.", title.name, FALSE)
         }
         box(lwd=par()$lwd)
     }
@@ -308,28 +314,31 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
             prev <- prev.all$summary
             current <- current.all$summary
             paired <- rbind(prev, current)
-            extinct <- extinct + do.plot(paired)
-        } else {
-            if (identical(row.col, "all")) {
-                #if (show.resource) cat("not showing resource: row.col='all'")
-                #show.resource <- FALSE
-                prev <- prev.all$dat
-                current <- current.all$dat
-                if (!is.null(row.sample)) {
-                    prev <- prev[row.sample,]
-                    current <- current[row.sample,]
-                }
-                paired <- rbind(prev, current)
-            } else {
-                prev <- prev.all$dat[prev.all$dat$row.col %in% row.col,]
-                current <-
-                    current.all$dat[current.all$dat$row.col %in% row.col,]
-                paired <- rbind(prev, current)
-                if (nrow(paired)==0) next
+            #extinct <- extinct + do.plot(paired)
+        } else if (identical(row.col, "all")) {
+            #if (show.resource) cat("not showing resource: row.col='all'")
+            #show.resource <- FALSE
+            prev <- prev.all$dat
+            current <- current.all$dat
+            if (!is.null(row.sample)) {
+                prev <- prev[row.sample,]
+                current <- current[row.sample,]
             }
+            paired <- rbind(prev, current)
+        } else {
+            prev <- prev.all$dat[prev.all$dat$row.col %in% row.col,]
+            current <-
+                current.all$dat[current.all$dat$row.col %in% row.col,]
+            paired <- rbind(prev, current)
+            if (nrow(paired)==0) next
+        }
+
+        if (plot.type=="cell") {
             for (pair in split(paired, paired$row.col)) {
                 extinct <- extinct + do.plot(pair)
             }
+        } else if (plot.type=="freq") {
+            lines(timepoint.ss, paired$coop.freq, type="o")
         }
 
         if (save.movie) {
@@ -947,7 +956,7 @@ plot.survival <- function(dat, split2="occ", device="x11",
                  ...)
             title(main=plot.name,cex.main=1)
 
-            color.start <- ifelse(last.split.name=="n", 2, 1)
+            color.start <- 1 #ifelse(last.split.name=="n", 2, 1)
             color <- color.start
             by.last <- split(s2, s2[[last.split.name]])
             cond <- unique(names(by.last))
