@@ -60,7 +60,8 @@ class AdaptiveRaceParams(object):
         self.coop_to_cheat = [1e-8] 
         self.cheat_to_coop = [0]
         self.anc_to_evo = [0]
-        self.evo_to_anc [0]
+        self.evo_to_anc = [0]
+        self.mut_rate = [0]
         self.migration_rates = [0] + [10**-y for y in reversed(range(4,13))]
 
         self.base_km = [10]
@@ -171,13 +172,14 @@ class AdaptiveRaceParams(object):
                                              params['coop_to_cheat'],    #16
                                              params['cheat_to_coop'],    #17
                                              params['anc_to_evo'],       #18
-                                             params['evo_to_anc']))      #19
+                                             params['evo_to_anc'],       #19
+                                             params['mut_rate']))        #20
 
         output = self.output
         if output == '': output = self.__class__.__name__
         outputs = []
         cmds = []
-        template = '{0}_{1}_n={2}_mutant-freq={3}_mig={15}_' \
+        template = '{0}_{1}_n={2}_mutant-freq={3}_mig={15}_mut-rate={20}_' \
                    'anc-to-evo={18}_coop-to-cheat={16}_coop-release={4}_' \
                    'cheat-adv={8}_km-adv={9}_death-adv={10}_' \
                    'coop-freq={6}_size={13}_occ={14}'
