@@ -59,7 +59,8 @@ class AdaptiveRaceParams(object):
         self.frac_occupied = [0.25, 0.5, 0.75, 1]
         self.coop_to_cheat = [1e-8] 
         self.cheat_to_coop = [0]
-        self.mut_rate = [1e-10]
+        self.anc_to_evo = [0]
+        self.evo_to_anc [0]
         self.migration_rates = [0] + [10**-y for y in reversed(range(4,13))]
 
         self.base_km = [10]
@@ -169,14 +170,15 @@ class AdaptiveRaceParams(object):
                                              params['migration_rates'],  #15
                                              params['coop_to_cheat'],    #16
                                              params['cheat_to_coop'],    #17
-                                             params['mut_rate']))        #18
+                                             params['anc_to_evo'],       #18
+                                             params['evo_to_anc']))      #19
 
         output = self.output
         if output == '': output = self.__class__.__name__
         outputs = []
         cmds = []
         template = '{0}_{1}_n={2}_mutant-freq={3}_mig={15}_' \
-                   'mut-rate={18}_coop-to-cheat={16}_coop-release={4}_' \
+                   'anc-to-evo={18}_coop-to-cheat={16}_coop-release={4}_' \
                    'cheat-adv={8}_km-adv={9}_death-adv={10}_' \
                    'coop-freq={6}_size={13}_occ={14}'
 
@@ -229,7 +231,6 @@ class NoMut(AdaptiveRace):
         super(NoMut, self).__init__()
         self.mutant_freqs = [0];
         self.coop_to_cheat = [0];
-        self.mut_rate = [0];
         self.frac_occupied = [1];
         self.migration_rates = [0];
         
@@ -255,7 +256,6 @@ class TwoMut(AdaptiveRace):
 class MutAssay(AdaptiveRace):
     def __init__(self):
         super(MutAssay, self).__init__()
-        self.mut_rate = [0];
         self.coop_to_cheat = [1e-7];
         self.mutant_freqs = [0];
         self.frac_occupied = [0.5, 0.9, 1];
