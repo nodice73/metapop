@@ -37,21 +37,26 @@ import java.util.List;
 public class MutateCoopCheat implements MutationRule {
     private double coop_to_cheat;
     private double cheat_to_coop;
+    private double anc_to_evo;
+    private double evo_to_anc;
     private RandomNumberUser rng;
 
     /**
      * constructor
      */
     public MutateCoopCheat(double coop_to_cheat, double cheat_to_coop,
+                            double anc_to_evo, double evo_to_anc, 
                            RandomNumberUser rng)
     {
         this.coop_to_cheat = coop_to_cheat;
         this.cheat_to_coop = cheat_to_coop;
+        this.anc_to_evo = anc_to_evo;
+        this.evo_to_anc = evo_to_anc;
         this.rng = rng;
     }
 
     public void mutate(List<Population> pops) {
-        if (coop_to_cheat != 0 || cheat_to_coop != 0) {
+        if (coop_to_cheat != 0 || cheat_to_coop != 0 || anc_to_evo != 0 || evo_to_enc != 0) {
             for (Population pop:pops) {
                 int anc_coop_muts = 0;
                 int anc_cheat_muts = 0;
@@ -85,14 +90,37 @@ public class MutateCoopCheat implements MutationRule {
                         anc_cheat.getSize() - anc_cheat_muts + anc_coop_muts);
                 evo_cheat.setSize(
                         evo_cheat.getSize() - evo_cheat_muts + evo_coop_muts);
+                        
+                if (anc_to_evo > 0.0) {
+                    anc_coop_muts = rng.getNextBinomial(
+                            anc_coop.getSize(), anc_to_evo);
+                    anc_cheat_muts = rng.getNextBinomial(
+                            anc_cheat.getSize(), anc_to_evo);
+                }
+
+                if (evo_to_anc > 0.0) {
+                    evo_coop_muts = rng.getNextBinomial(
+                            evo_coop.getSize(), evo_to_anc);
+                    evo_cheat_muts = rng.getNextBinomial(
+                            evo_cheat.getSize(), evo_to_anc);
+                }
+
+                anc_coop.setSize(
+                        anc_coop.getSize() - anc_coop_muts + evo_coop_muts);
+                evo_coop.setSize(
+                        evo_coop.getSize() - evo_coop_muts + anc_coop_muts);
+                anc_cheat.setSize(
+                        anc_cheat.getSize() - anc_cheat_muts + evo_cheat_muts);
+                evo_cheat.setSize(
+                        evo_cheat.getSize() - evo_cheat_muts + anc_cheat_muts);
             }
         }
     }
 
     @Override
     public String toString() {
-        return String.format("%s, coop_to_cheat=%.2e, cheat_to_coop=%.2e",
+        return String.format("%s, coop_to_cheat=%.2e, cheat_to_coop=%.2e, anc_to_evo=%.2e, evo_to_anc=%.2e",
                              this.getClass().getSimpleName(), coop_to_cheat,
-                             cheat_to_coop);
+                             cheat_to_coop, anc_to_evo, evo_to_anc);
     }
 }
