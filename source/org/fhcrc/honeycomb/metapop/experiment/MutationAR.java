@@ -98,7 +98,8 @@ public abstract class MutationAR {
     private double mutant_freq;
     private double cheat_to_coop_mutation_rate;
     private double coop_to_cheat_mutation_rate;
-    private double mutation_rate;
+    private double anc_to_evo_mutation_rate;
+    private double evo_to_anc_mutation_rate;
     private MutationRule mutation_rule;
     private CoordinatePicker location_picker;
     private List<Population> initial_populations;
@@ -166,7 +167,8 @@ public abstract class MutationAR {
 
         dil_rule = makeDilutionRule();
 
-        mutation_rule = new MutateAdaptive(mutation_rate, coop_to_cheat_mutation_rate, cheat_to_coop_mutation_rate, mutation_rng);
+        mutation_rule = new MutateCoopCheat(coop_to_cheat_mutation_rate, cheat_to_coop_mutation_rate, 
+                anc_to_evo_mutation_rate, evo_to_anc_mutation_rate, mutation_rng);
 
         migration_rule = pickMigration();
 
@@ -461,15 +463,16 @@ public abstract class MutationAR {
         migration_rate = Double.parseDouble(args[15]);
         coop_to_cheat_mutation_rate = Double.parseDouble(args[16]);
         cheat_to_coop_mutation_rate = Double.parseDouble(args[17]);
-        mutation_rate = Double.parseDouble(args[18]);
-        randomize = Boolean.parseBoolean(args[19]);
-        population_seed = Long.parseLong(args[20]);
-        location_seed = Long.parseLong(args[21]);
-        migration_seed = Long.parseLong(args[22]);
-        mutation_seed = Long.parseLong(args[23]);
-        env_change_seed = Long.parseLong(args[24]);
-        hours = (int) Double.parseDouble(args[25]);
-        save_every_dbl = Double.parseDouble(args[26]);
+        anc_to_evo_mutation_rate = Double.parseDouble(args[18]);
+        evo_to_anc_mutation_rate = Double.parseDouble(args([19]);
+        randomize = Boolean.parseBoolean(args[20]);
+        population_seed = Long.parseLong(args[21]);
+        location_seed = Long.parseLong(args[22]);
+        migration_seed = Long.parseLong(args[23]);
+        mutation_seed = Long.parseLong(args[24]);
+        env_change_seed = Long.parseLong(args[25]);
+        hours = (int) Double.parseDouble(args[26]);
+        save_every_dbl = Double.parseDouble(args[27]);
         if (args.length == expected_length+1) {
            output_location = args[expected_length];           
         } else {
@@ -481,7 +484,8 @@ public abstract class MutationAR {
     private void scaleParams() {
         coop_to_cheat_mutation_rate /= TIMESTEP_SCALE;
         cheat_to_coop_mutation_rate /= TIMESTEP_SCALE;
-        mutation_rate /= TIMESTEP_SCALE;
+        anc_to_evo_mutation_rate /= TIMESTEP_SCALE;
+        evo_to_anc_mutation_rate /= TIMESTEP_SCALE;
         coop_release_rate /= TIMESTEP_SCALE;
         migration_rate /= TIMESTEP_SCALE;
         iterations = rounded(hours*TIMESTEP_SCALE);
