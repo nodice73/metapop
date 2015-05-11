@@ -49,6 +49,7 @@ import org.fhcrc.honeycomb.metapop.migration.IndividualMigration;
 import org.fhcrc.honeycomb.metapop.stop.StopCondition;
 import org.fhcrc.honeycomb.metapop.stop.ExtinctOrGrowingStop;
 import org.fhcrc.honeycomb.metapop.stop.CoopCheatExtinctStop;
+import org.fhcrc.honeycomb.metapop.stop.CoopExtinctStop;
 
 import java.io.File;
 import java.util.Arrays;
@@ -94,6 +95,8 @@ public abstract class AdaptiveRace {
     private double mutant_freq;
     private double cheat_to_coop_mutation_rate;
     private double coop_to_cheat_mutation_rate;
+    private double anc_to_evo_mutation_rate;
+    private double evo_to_anc_mutation_rate;
     private MutationRule mutation_rule;
     private CoordinatePicker location_picker;
     private List<Population> initial_populations;
@@ -162,16 +165,18 @@ public abstract class AdaptiveRace {
         dil_rule = makeDilutionRule();
 
         mutation_rule = 
-            new MutateCoopCheat(coop_to_cheat_mutation_rate,
-                                cheat_to_coop_mutation_rate, mutation_rng);
+            new MutateCoopCheat(coop_to_cheat_mutation_rate, cheat_to_coop_mutation_rate, 
+                                anc_to_evo_mutation_rate, evo_to_anc_mutation_rate, mutation_rng);
 
         migration_rule = pickMigration();
 
         env_changer = new StaticEnvironment();
         location_picker = new UniqueRandomPicker(rows, cols, location_rng);
 
-        if (initial_coop_freq < 1.0 && initial_coop_freq > 0.0) {
+        if (initial_coop_freq < 1.0 && initial_coop_freq > 0.0 && coop_to_cheat_mutation_rate == 0) {
             stop_condition = new CoopCheatExtinctStop();
+        } else if (initial_coop_freq < 1.0 && initial_coop_freq > 0.0) {
+            stop_condition = new CoopExtinctStop();
         } else {
             int min_pop_size = 1000;
             stop_condition = new ExtinctOrGrowingStop(min_pop_size);
@@ -422,6 +427,8 @@ public abstract class AdaptiveRace {
             "[row/col size] [frac occupied] [migration rate] " +
             "[coop to cheat mutation]" +
             "[cheat to coop mutation]" +
+            "[anc to evo mutation]" + 
+            "[evo to anc mutation]" +
             "[randomize]" +
             "[population seed] " +
             "[location seed] " +
@@ -452,6 +459,8 @@ public abstract class AdaptiveRace {
         migration_rate = Double.parseDouble(args[15]);
         coop_to_cheat_mutation_rate = Double.parseDouble(args[16]);
         cheat_to_coop_mutation_rate = Double.parseDouble(args[17]);
+        anc_to_evo_mutation_rate = Double.parseDouble(args[18]);
+        evo_to_anc_mutation_rate = Double.parseDouble(args[19]);
         randomize = Boolean.parseBoolean(args[18]);
         population_seed = Long.parseLong(args[19]);
         location_seed = Long.parseLong(args[20]);
@@ -468,6 +477,8 @@ public abstract class AdaptiveRace {
     private void scaleParams() {
         coop_to_cheat_mutation_rate /= TIMESTEP_SCALE;
         cheat_to_coop_mutation_rate /= TIMESTEP_SCALE;
+        anc_to_evo_mutation_rate /= TIMESTEP_SCALE;
+        evo_to_acn_mutation_rate /= TIMESTEP_SCALE;
         coop_release_rate /= TIMESTEP_SCALE;
         migration_rate /= TIMESTEP_SCALE;
         iterations = rounded(hours*TIMESTEP_SCALE);
