@@ -26,13 +26,11 @@ import org.fhcrc.honeycomb.metapop.RandomNumberUser;
 import java.util.List;
 
 /** 
- * Mutates cooperators to cheaters and cheaters to cooperators.
+ * Mutates ancestral types to evolved types.
  *
- * Created on 27 May, 2013
+ * Created on 14 May, 2015
  *
  * @author Adam Waite
- * @version $Rev: 2393 $, $Date: 2014-05-24 19:17:59 -0400 (Sat, 24 May 2014) $, $Author: ajwaite $
- *
  */
 public class MutateAncToEvo implements MutationRule {
     private double anc_to_evo;
