@@ -34,14 +34,14 @@ import java.util.List;
  * @version $Rev: 2393 $, $Date: 2014-05-24 19:17:59 -0400 (Sat, 24 May 2014) $, $Author: ajwaite $
  *
  */
-public class MutateAncToCoop implements MutationRule {
+public class MutateAncToEvo implements MutationRule {
     private double anc_to_evo;
     private RandomNumberUser rng;
 
     /**
      * constructor
      */
-    public MutateAncToCoop(double anc_to_evo, RandomNumberUser rng)
+    public MutateAncToEvo(double anc_to_evo, RandomNumberUser rng)
     {
         this.anc_to_evo = anc_to_evo;
         this.rng = rng;
@@ -65,7 +65,6 @@ public class MutateAncToCoop implements MutationRule {
                     anc_coop.getSize(), anc_to_evo);
             new_cheat_evo = rng.getNextBinomial(
                     anc_cheat.getSize(), anc_to_evo);
-            }
 
             anc_coop.setSize(anc_coop.getSize() - new_coop_evo);
             evo_coop.setSize(evo_coop.getSize() + new_coop_evo);
@@ -76,7 +75,7 @@ public class MutateAncToCoop implements MutationRule {
 
     @Override
     public String toString() {
-        return String.format("%s, anc_to_evo=%.2e"
+        return String.format("%s, anc_to_evo=%.2e", 
                              this.getClass().getSimpleName(), anc_to_evo);
     }
 }
