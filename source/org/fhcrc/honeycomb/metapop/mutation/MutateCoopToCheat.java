@@ -34,7 +34,7 @@ import java.util.List;
  * @version $Rev: 2393 $, $Date: 2014-05-24 19:17:59 -0400 (Sat, 24 May 2014) $, $Author: ajwaite $
  *
  */
-public class MutateCoopCheat implements MutationRule {
+public class MutateCoopToCheat implements MutationRule {
     private double coop_to_cheat;
     private double cheat_to_coop;
     private RandomNumberUser rng;
@@ -42,7 +42,7 @@ public class MutateCoopCheat implements MutationRule {
     /**
      * constructor
      */
-    public MutateCoopCheat(double coop_to_cheat, double cheat_to_coop,
+    public MutateCoopToCheat(double coop_to_cheat, double cheat_to_coop,
                            RandomNumberUser rng)
     {
         this.coop_to_cheat = coop_to_cheat;
