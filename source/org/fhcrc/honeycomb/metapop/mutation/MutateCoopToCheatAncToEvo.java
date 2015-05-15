@@ -23,6 +23,9 @@ import org.fhcrc.honeycomb.metapop.Population;
 import org.fhcrc.honeycomb.metapop.Subpopulation;
 import org.fhcrc.honeycomb.metapop.RandomNumberUser;
 
+import org.fhcrc.honeycomb.metapop.mutation.MutateCoopToCheat;
+import org.fhcrc.honeycomb.metapop.mutation.MutateAncToEvo;
+
 import java.util.List;
 
 /**
@@ -46,8 +49,8 @@ public class MutateCoopToCheatAncToEvo implements MutationRule {
     public MutateCoopToCheatAncToEvo(double coop_to_cheat, double cheat_to_coop, 
                                      double anc_to_evo, RandomNumberUser rng)
     {
-        this.anc_evo = MutateAncToEvo(anc_to_evo, rng);
-        this.coop_cheat = MutateCoopToCheat(coop_to_cheat, cheat_to_coop, rng);
+        this.anc_evo = new MutateAncToEvo(anc_to_evo, rng);
+        this.coop_cheat = new MutateCoopToCheat(coop_to_cheat, cheat_to_coop, rng);
     }
 
     public void mutate(List<Population> pops) {
