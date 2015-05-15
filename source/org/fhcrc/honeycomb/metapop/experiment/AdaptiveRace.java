@@ -40,7 +40,8 @@ import org.fhcrc.honeycomb.metapop.coordinate.picker.RandomNeighborPicker;
 
 import org.fhcrc.honeycomb.metapop.mutation.MutationRule;
 import org.fhcrc.honeycomb.metapop.mutation.NoMutation;
-import org.fhcrc.honeycomb.metapop.mutation.MutateCoopCheat;
+import org.fhcrc.honeycomb.metapop.mutation.MutateCoopToCheat;
+import org.fhcrc.honeycomb.metapop.mutation.MutateAncToEvo;
 
 import org.fhcrc.honeycomb.metapop.migration.MigrationRule;
 import org.fhcrc.honeycomb.metapop.migration.PropaguleMigration;
@@ -163,8 +164,8 @@ public abstract class AdaptiveRace {
         dil_rule = makeDilutionRule();
 
         mutation_rule = 
-            new MutateCoopCheat(coop_to_cheat_mutation_rate,
-                                cheat_to_coop_mutation_rate, mutation_rng);
+            new MutateCoopToCheat(coop_to_cheat_mutation_rate,
+                                  cheat_to_coop_mutation_rate, mutation_rng);
 
         migration_rule = pickMigration();
 
