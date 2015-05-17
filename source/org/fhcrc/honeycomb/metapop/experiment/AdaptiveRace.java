@@ -40,8 +40,7 @@ import org.fhcrc.honeycomb.metapop.coordinate.picker.RandomNeighborPicker;
 
 import org.fhcrc.honeycomb.metapop.mutation.MutationRule;
 import org.fhcrc.honeycomb.metapop.mutation.NoMutation;
-import org.fhcrc.honeycomb.metapop.mutation.MutateCoopToCheat;
-import org.fhcrc.honeycomb.metapop.mutation.MutateAncToEvo;
+import org.fhcrc.honeycomb.metapop.mutation.MutateCoopToCheatAncToEvo;
 
 import org.fhcrc.honeycomb.metapop.migration.MigrationRule;
 import org.fhcrc.honeycomb.metapop.migration.PropaguleMigration;
@@ -96,6 +95,7 @@ public abstract class AdaptiveRace {
     private double mutant_freq;
     private double cheat_to_coop_mutation_rate;
     private double coop_to_cheat_mutation_rate;
+    private double anc_to_evo_mutation_rate;
     private MutationRule mutation_rule;
     private CoordinatePicker location_picker;
     private List<Population> initial_populations;
@@ -164,8 +164,10 @@ public abstract class AdaptiveRace {
         dil_rule = makeDilutionRule();
 
         mutation_rule = 
-            new MutateCoopToCheat(coop_to_cheat_mutation_rate,
-                                  cheat_to_coop_mutation_rate, mutation_rng);
+            new MutateCoopToCheatAncToEvo(coop_to_cheat_mutation_rate,
+                                          cheat_to_coop_mutation_rate,
+                                          anc_to_evo_mutation_rate,
+                                          mutation_rng);
 
         migration_rule = pickMigration();
 
@@ -458,14 +460,15 @@ public abstract class AdaptiveRace {
         migration_rate = Double.parseDouble(args[15]);
         coop_to_cheat_mutation_rate = Double.parseDouble(args[16]);
         cheat_to_coop_mutation_rate = Double.parseDouble(args[17]);
-        randomize = Boolean.parseBoolean(args[18]);
-        population_seed = Long.parseLong(args[19]);
-        location_seed = Long.parseLong(args[20]);
-        migration_seed = Long.parseLong(args[21]);
-        mutation_seed = Long.parseLong(args[22]);
-        env_change_seed = Long.parseLong(args[23]);
-        hours = (int) Double.parseDouble(args[24]);
-        save_every_dbl = Double.parseDouble(args[25]);
+        anc_to_evo_mutation_rate = Double.parseDouble(args[18]);
+        randomize = Boolean.parseBoolean(args[19]);
+        population_seed = Long.parseLong(args[20]);
+        location_seed = Long.parseLong(args[21]);
+        migration_seed = Long.parseLong(args[22]);
+        mutation_seed = Long.parseLong(args[23]);
+        env_change_seed = Long.parseLong(args[24]);
+        hours = (int) Double.parseDouble(args[25]);
+        save_every_dbl = Double.parseDouble(args[26]);
 
         if (args.length == expected_length+1) 
             output_location = args[expected_length];
