@@ -55,7 +55,8 @@ metapop.process <- function(path, nrows=-1) {
     dat.summary <- within(dat.summary, coop.freq <- coops/(coops+cheats))
 
     list(data=dat, summary=dat.summary, coop.cols=coop.cols,
-         cheat.cols=cheat.cols)
+         cheat.cols=cheat.cols, coop.sum.col=coop.sum.col,
+         cheat.sum.col=cheat.sum.col)
 }
 
 plot.folder <- function(folder, save.path, run.pattern, device="png", 
@@ -203,7 +204,7 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
     if (!identical(row.col, "none")) {
         default.plot(w=square.plot.dim, h=square.plot.dim, device,
                      file.path(save.path,plot.name))
-        if (plot.type=="cell") {
+        if (plot.type=="cell" || plot.type=="total") {
             plot(range(hrs), range(y.range), type="n", log="y",
                  axes=FALSE, ann=FALSE)
             setup.plot(total.cell.lab, title.name, FALSE)
@@ -265,7 +266,7 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
         do.plot <- function(pair) {
             extinct.loc <- 0
             resource <- pair$resource
-            if (plot.type=="cell") {
+            if (plot.type=="cell" || plot.type=="total") {
                 if (show.resource && resource[1] > y.range[1]) {
                     if (resource[2] < y.range[1]) {
                         lines(timepoint.ss, c(resource[1], usr.lim),
@@ -277,6 +278,7 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
                         lines(timepoint.ss, resource,  lwd=linew)
                     }
                 }
+                browser()
                 for (type in data.cols) {
                     type.name <- names(pair)[type]
 
@@ -337,6 +339,8 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
             for (pair in split(paired, paired$row.col)) {
                 extinct <- extinct + do.plot(pair)
             }
+        } else if (plot.type=="total") {
+            do.plot(paired)
         } else if (plot.type=="freq") {
             lines(timepoint.ss, paired$coop.freq, type="o")
         }
