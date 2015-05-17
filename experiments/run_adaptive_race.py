@@ -264,6 +264,13 @@ class OtherConds(CoopToCheat):
         self.frac_occupied = [0.5]
         self.mutant_freqs = [0, 2e-5, 2e-4, 2e-3]
 
+class AncToEvo(OtherConds):
+    def __init__(self):
+        super(AncToEvo, self).__init__()
+        self.mutants_freqs = [0]
+        self.coop_freq = [0.5, 0.99999]
+        self.anc_to_evo = [1e-13, 1e-12, 1e-11]
+
 class LowRelease(OtherConds):
     def __init__(self):
         super(LowRelease, self).__init__()
@@ -312,7 +319,6 @@ class Test(AdaptiveRaceParams):
         self.save_every = [10]
         self.hours = [1000]
 
-
 class Benchmark(AdaptiveRaceParams):
     def __init__(self):
         super(Benchmark, self).__init__()
@@ -330,7 +336,7 @@ class Benchmark(AdaptiveRaceParams):
 
 if __name__ == "__main__":
     #ps = Benchmark()
-    ps = Test()
+    #ps = Test()
     #ps = AncReleaseTest()
     #ps = EvoReleaseTest()
     #ps = AdaptiveRace()
@@ -342,5 +348,7 @@ if __name__ == "__main__":
     #ps = CoopToCheat()
     #ps = CoopToCheatAddnl()
     #ps = LowRelease()
-    #ps.test(1)
-    ps.run(1)
+    ps = AncToEvo()
+
+    ps.test(1)
+    #ps.run(1)
