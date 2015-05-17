@@ -59,6 +59,7 @@ class AdaptiveRaceParams(object):
         self.frac_occupied = [0.25, 0.5, 0.75, 1]
         self.coop_to_cheat = [0] 
         self.cheat_to_coop = [0]
+        self.anc_to_evo = [0]
         self.migration_rates = [0] + [10**-y for y in reversed(range(4,13))]
 
         self.base_km = [10]
@@ -175,7 +176,8 @@ class AdaptiveRaceParams(object):
                                              params['frac_occupied'],    #14
                                              params['migration_rates'],  #15
                                              params['coop_to_cheat'],    #16
-                                             params['cheat_to_coop']))   #17
+                                             params['cheat_to_coop'],    #17
+                                             params['anc_to_evo']))      #18
 
         output = self.output
         if output == '': output = self.__class__.__name__
@@ -183,7 +185,7 @@ class AdaptiveRaceParams(object):
         cmds = []
         template = '{0}_{1}_n={2}_mutant-freq={3}_mig={15}_coop-release={4}_' \
                    'km-adv={9}_death-adv={10}_' \
-                   'coop-freq={6}_size={13}_occ={14}_u={16}'
+                   'coop-freq={6}_size={13}_occ={14}_u2={18}'
 
         for arg in args:
             seeds = []
@@ -303,11 +305,12 @@ class Test(AdaptiveRaceParams):
         self.mutant_freqs = [0]
         self.migration_rates = [0]
         self.coop_freq = [0.99999]
-        self.frac_occupied = [0.5]
-        #self.seeds = [str(i) for i in '1'*self.n_seeds]
-        self.save_every = [10]
         self.coop_to_cheat = [1e-7];
-        self.hours = [20000]
+        self.anc_to_evo = [1e-12]
+        self.frac_occupied = [0.5]
+        self.seeds = [str(i) for i in '1'*self.n_seeds]
+        self.save_every = [10]
+        self.hours = [1000]
 
 
 class Benchmark(AdaptiveRaceParams):
@@ -327,7 +330,7 @@ class Benchmark(AdaptiveRaceParams):
 
 if __name__ == "__main__":
     #ps = Benchmark()
-    #ps = Test()
+    ps = Test()
     #ps = AncReleaseTest()
     #ps = EvoReleaseTest()
     #ps = AdaptiveRace()
@@ -338,6 +341,6 @@ if __name__ == "__main__":
     #ps = HighOcc()
     #ps = CoopToCheat()
     #ps = CoopToCheatAddnl()
-    ps = LowRelease()
+    #ps = LowRelease()
     #ps.test(1)
-    ps.run(30)
+    ps.run(1)
