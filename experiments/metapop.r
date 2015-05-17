@@ -199,7 +199,7 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
 
     # cell plot
     title.name <- run.id
-    plot.name <- paste0(title.name, "_", row.col, "_",
+    plot.name <- paste0(title.name, "_", row.col, "_", plot.type, "_",
                         passed.xlim[1], "-", passed.xlim[2])
     if (!identical(row.col, "none")) {
         default.plot(w=square.plot.dim, h=square.plot.dim, device,
@@ -278,7 +278,6 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
                         lines(timepoint.ss, resource,  lwd=linew)
                     }
                 }
-                browser()
                 for (type in data.cols) {
                     type.name <- names(pair)[type]
 
