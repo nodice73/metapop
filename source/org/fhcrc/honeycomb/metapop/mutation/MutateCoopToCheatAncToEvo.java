@@ -46,11 +46,16 @@ public class MutateCoopToCheatAncToEvo implements MutationRule {
     /**
      * Constructor
      */
-    public MutateCoopToCheatAncToEvo(double coop_to_cheat, double cheat_to_coop, 
+    public MutateCoopToCheatAncToEvo(double coop_to_cheat,
+                                     double cheat_to_coop,
                                      double anc_to_evo, RandomNumberUser rng)
     {
+        this.coop_to_cheat = coop_to_cheat;
+        this.cheat_to_coop = cheat_to_coop;
+        this.anc_to_evo = anc_to_evo;
+        this.coop_cheat = new MutateCoopToCheat(coop_to_cheat, cheat_to_coop,
+                                                rng);
         this.anc_evo = new MutateAncToEvo(anc_to_evo, rng);
-        this.coop_cheat = new MutateCoopToCheat(coop_to_cheat, cheat_to_coop, rng);
     }
 
     public void mutate(List<Population> pops) {
