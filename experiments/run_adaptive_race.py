@@ -268,8 +268,8 @@ class AncToEvo(OtherConds):
     def __init__(self):
         super(AncToEvo, self).__init__()
         self.mutants_freqs = [0]
-        self.coop_freq = [0.5, 0.99999]
-        self.anc_to_evo = [1e-13, 1e-12, 1e-11]
+        self.coop_freq = [0.5]
+        self.anc_to_evo = [1e-13, 1e-12, 1e-11, 1e-7]
 
 class LowRelease(OtherConds):
     def __init__(self):
