@@ -350,5 +350,5 @@ if __name__ == "__main__":
     #ps = LowRelease()
     ps = AncToEvo()
 
-    ps.test(1)
-    #ps.run(1)
+    #ps.test(1)
+    ps.run(15)
