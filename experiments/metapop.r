@@ -109,6 +109,16 @@ plot.folder <- function(folder, save.path, run.pattern, device="png",
     res
 }
 
+plot.all <- function(folder, ...) {
+    conditions <- list.files(folder, full.names=TRUE)
+    for (condition in conditions) {
+        runs <- list.files(condition, full.names=TRUE)
+        for (run in runs) {
+            plot.timepoints(run, ...)
+        }
+    }
+}
+
 plot.timepoints <- function(folder, data.ext="tab", device="x11",
                             save.path, row.col="all", plot.type="cell",
                             save.movie=FALSE, write.data=FALSE, 
@@ -1040,7 +1050,7 @@ plot.survival <- function(dat, split2="occ", device="x11",
 make.var.list <- function(filenames) {
     vars <- c("range", "type", "n", "mutant-freq", "coop-release", "gamma",
               "coop-freq", "km", "cheat-adv", "evo-adv", "evo-trade",
-              "resource", "size", "occ", "mig", "u", "hrs")
+              "resource", "size", "occ", "mig", "u", "u2", "hrs")
     var.list <- vector("list", length(vars))
     names(var.list) <- vars
 

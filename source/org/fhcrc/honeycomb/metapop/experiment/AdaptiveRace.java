@@ -405,7 +405,7 @@ public abstract class AdaptiveRace {
 
     private void parseArgs(String args[]) {
         this.args = args;
-        int expected_length = 26;
+        int expected_length = 27;
 
         if (args.length < expected_length) {
            // for (String arg:args) {
@@ -430,6 +430,7 @@ public abstract class AdaptiveRace {
             "[row/col size] [frac occupied] [migration rate] " +
             "[coop to cheat mutation]" +
             "[cheat to coop mutation]" +
+            "[anc to evo mutation]" +
             "[randomize]" +
             "[population seed] " +
             "[location seed] " +
