@@ -1050,7 +1050,7 @@ plot.survival <- function(dat, split2="occ", device="x11",
 make.var.list <- function(filenames) {
     vars <- c("range", "type", "n", "mutant-freq", "coop-release", "gamma",
               "coop-freq", "km", "cheat-adv", "evo-adv", "evo-trade",
-              "resource", "size", "occ", "mig", "u", "hrs")
+              "resource", "size", "occ", "mig", "u", "u2", "hrs")
     var.list <- vector("list", length(vars))
     names(var.list) <- vars
 
