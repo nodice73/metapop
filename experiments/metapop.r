@@ -123,7 +123,7 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
                             save.path, row.col="all", plot.type="cell",
                             save.movie=FALSE, write.data=FALSE, 
                             show.resource=FALSE, rsample, xlim,
-                            ylim=c(1e-2,1e6))
+                            ylim=c(1e-2,1e6), overwrite=TRUE)
 {
     graphics.off()
     if (is.na(folder)) stop("Folder is NA!")
@@ -136,6 +136,16 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
     }
 
     run.id <- basename(folder)
+    title.name <- run.id
+    plot.name <- paste0(title.name, "_", row.col, "_", plot.type, "_",
+                        passed.xlim[1], "-", passed.xlim[2])
+    full.name <- file.path(save.path, plot.name)
+
+    if (!overwrite && exists(full.name)) {
+        cat(full.name, ' exists, skipping...\n')
+        return
+    }
+
     info <- parse.infofile(file.path(folder, INFO_FILE))
     files <- get.files(folder, "tab")
     gc()
@@ -208,12 +218,8 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
     }
 
     # cell plot
-    title.name <- run.id
-    plot.name <- paste0(title.name, "_", row.col, "_", plot.type, "_",
-                        passed.xlim[1], "-", passed.xlim[2])
     if (!identical(row.col, "none")) {
-        default.plot(w=square.plot.dim, h=square.plot.dim, device,
-                     file.path(save.path,plot.name))
+        default.plot(w=square.plot.dim, h=square.plot.dim, device, full.name)
         if (plot.type=="cell" || plot.type=="total") {
             plot(range(hrs), range(y.range), type="n", log="y",
                  axes=FALSE, ann=FALSE)
