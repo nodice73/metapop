@@ -135,31 +135,29 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
         if (!file.exists(movie.folder)) dir.create(movie.folder)
     }
 
-    run.id <- basename(folder)
-    title.name <- run.id
-    plot.name <- paste0(title.name, "_", row.col, "_", plot.type, "_",
-                        passed.xlim[1], "-", passed.xlim[2])
-    full.name <- file.path(save.path, plot.name)
-
-    if (!overwrite && exists(full.name)) {
-        cat(full.name, ' exists, skipping...\n')
-        return
-    }
-
-    info <- parse.infofile(file.path(folder, INFO_FILE))
+    info  <- parse.infofile(file.path(folder, INFO_FILE))
     files <- get.files(folder, "tab")
     gc()
 
     timepoints <- files$timepoints/info$ts.scale
     world.size <- info$rows * info$cols
 
-
+    run.id <- basename(folder)
+    title.name <- run.id
     passed.xlim <- eval(match.call()$xlim)
     hrs <- if (is.null(passed.xlim)) {
         passed.xlim <- range(timepoints)
         timepoints
     } else { 
         timepoints[timepoints>=passed.xlim[1] & timepoints<=passed.xlim[2]]
+    }
+
+    plot.name <- paste0(title.name, "_", row.col, "_", plot.type, "_",
+                        passed.xlim[1], "-", passed.xlim[2])
+    full.name <- file.path(save.path, plot.name)
+    if (!overwrite && exists(full.name)) {
+        cat(full.name, ' exists, skipping...\n')
+        return
     }
 
     plot.files <- files$files[which(timepoints %in% hrs)]
