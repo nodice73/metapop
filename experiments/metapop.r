@@ -325,10 +325,11 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
         prev <- NULL
         current <- NULL
         if (identical(row.col, "total")) {
-            data.cols <- c(prev.all$coop.sum.col, prev.all$cheat.sum.col)
             prev <- prev.all$summary
             current <- current.all$summary
             paired <- rbind(prev, current)
+            data.cols <- c(grep("_coop", names(prev)),
+                           grep("_cheat", names(prev)))
             #extinct <- extinct + do.plot(paired)
         } else if (identical(row.col, "all")) {
             #if (show.resource) cat("not showing resource: row.col='all'")
