@@ -57,7 +57,7 @@ class AdaptiveRaceParams(object):
         self.initial_pop_size = [1e5]
         self.mutant_freqs = [0, 2e-5, 2e-4, 2e-3]
         self.frac_occupied = [0.25, 0.5, 0.75, 1]
-        self.coop_to_cheat = [0] 
+        self.coop_to_cheat = [1e-7] 
         self.cheat_to_coop = [0]
         self.anc_to_evo = [0]
         self.migration_rates = [0] + [10**-y for y in reversed(range(4,13))]
@@ -185,7 +185,7 @@ class AdaptiveRaceParams(object):
         cmds = []
         template = '{0}_{1}_n={2}_mutant-freq={3}_mig={15}_coop-release={4}_' \
                    'km-adv={9}_death-adv={10}_' \
-                   'coop-freq={6}_size={13}_occ={14}_u2={18}'
+                   'coop-freq={6}_size={13}_occ={14}_u={16}_u2={18}'
 
         for arg in args:
             seeds = []
@@ -267,8 +267,9 @@ class OtherConds(CoopToCheat):
 class AncToEvo(OtherConds):
     def __init__(self):
         super(AncToEvo, self).__init__()
-        self.mutants_freqs = [0]
+        self.mutant_freqs = [0]
         self.coop_freq = [0.5]
+        self.frac_occupied = [0.5]
         self.anc_to_evo = [1e-13, 1e-12, 1e-11, 1e-7]
 
 class LowRelease(OtherConds):
@@ -350,5 +351,5 @@ if __name__ == "__main__":
     #ps = LowRelease()
     ps = AncToEvo()
 
-    ps.test(1)
-    #ps.run(1)
+    #ps.test(1)
+    ps.run(1)
