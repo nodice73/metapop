@@ -57,7 +57,7 @@ class AdaptiveRaceParams(object):
         self.initial_pop_size = [1e5]
         self.mutant_freqs = [0, 2e-5, 2e-4, 2e-3]
         self.frac_occupied = [0.25, 0.5, 0.75, 1]
-        self.coop_to_cheat = [1e-7] 
+        self.coop_to_cheat = [1e-7]
         self.cheat_to_coop = [0]
         self.anc_to_evo = [0]
         self.migration_rates = [0] + [10**-y for y in reversed(range(4,13))]
