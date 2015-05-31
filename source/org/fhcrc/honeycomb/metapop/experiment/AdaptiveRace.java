@@ -478,6 +478,7 @@ public abstract class AdaptiveRace {
     private void scaleParams() {
         coop_to_cheat_mutation_rate /= TIMESTEP_SCALE;
         cheat_to_coop_mutation_rate /= TIMESTEP_SCALE;
+        anc_to_evo_mutation_rate /= TIMESTEP_SCALE;
         coop_release_rate /= TIMESTEP_SCALE;
         migration_rate /= TIMESTEP_SCALE;
         iterations = rounded(hours*TIMESTEP_SCALE);
