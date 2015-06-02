@@ -962,8 +962,8 @@ plot.survival <- function(dat, split2="occ", device="x11",
     for (mig.range in split(dat, dat$range)) {
         rang <- unique(mig.range$range)
         for (s2 in split(mig.range, mig.range[[split2]])) {
-            occ <- sprintf("%.2f", unique(s2$occ))
-            split2.val <- sprintf("%.2f", unique(s2[[split2]]))
+            occ <- sprintf("%.2g", unique(s2$occ))
+            split2.val <- sprintf("%.2g", unique(s2[[split2]]))
             plot.name <- paste0(rang, ", ", split2, "=", split2.val,
                                 "_survive_freq")
             plot.path <- file.path(save.to, plot.name)
