@@ -686,10 +686,15 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                 if (any(current.df.row$complete)) {
                     remove.rows <- 
                         c(remove.rows, 
-                          matching.id.rows[!current.df.row$complete])
+                          row.names(
+                            current.df[
+                                matching.id.rows[!current.df.row$complete],]))
+
                     next
                 } else {
-                    remove.rows <- c(remove.rows, matching.id.rows[-1])
+                    remove.rows <- c(remove.rows, 
+                                     row.names(
+                                        current.df[matching.id.rows[-1],]))
                 }
             }
 
@@ -792,7 +797,8 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
     cat("\n")
     res <- res[1:(row.idx-1),]
     if (!is.null(remove.rows)) {
-        current.df <- current.df[-remove.rows,]
+        cat("removing redundant entries...\n")
+        current.df <- current.df[!row.names(current.df) %in% c(remove.rows),]
     }
     current.df <- rbind(current.df, res)
     current.df
