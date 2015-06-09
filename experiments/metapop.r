@@ -155,9 +155,10 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
     plot.name <- paste0(title.name, "_", row.col, "_", plot.type, "_",
                         passed.xlim[1], "-", passed.xlim[2])
     full.name <- file.path(save.path, plot.name)
-    if (!overwrite && exists(full.name)) {
+
+    if (!overwrite && file.exists(paste0(full.name, ".", device))) {
         cat(full.name, ' exists, skipping...\n')
-        return
+        return()
     }
 
     plot.files <- files$files[which(timepoints %in% hrs)]
