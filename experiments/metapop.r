@@ -122,8 +122,8 @@ plot.all <- function(folder, ...) {
 plot.timepoints <- function(folder, data.ext="tab", device="x11",
                             save.path, row.col="all", plot.type="cell",
                             save.movie=FALSE, write.data=FALSE, 
-                            show.resource=FALSE, rsample, xlim,
-                            ylim=c(1e-2,1e6), overwrite=TRUE)
+                            show.resource=FALSE, rsample, xlim, ylim,
+                            overwrite=TRUE)
 {
     graphics.off()
     if (is.na(folder)) stop("Folder is NA!")
@@ -165,10 +165,11 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
     n.plot.files <- length(plot.files)
 
     passed.ylim <- eval(match.call()$ylim)
-    y.range <- ylim
     if (is.null(passed.ylim)) {
         if (identical(row.col, "total")) {
             y.range <- c(1,1e9)
+        } else if (!show.resource) {
+            y.range <- c(1, 1e6)
         }
     } else {
         y.range <- c(passed.ylim[1], passed.ylim[2])
