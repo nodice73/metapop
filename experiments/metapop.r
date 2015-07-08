@@ -1132,8 +1132,7 @@ save.to <- function(data.folder, save.path) {
 metapop.makeheatmaps <- function(folder, first=0, last, data.ext="tab",
                                  device="jpeg", pop.size, ...) {
     graphics.off()
-    save.path <- save.to(data.folder=folder, ...)
-    save.path <- file.path(save.path, "movie")
+    save.path <- save.to(data.folder=file.path(folder,"movie"), ...)
     file.copy(file.path(folder, INFO_FILE), save.path)
     files <- get.files(folder, data.ext)$files
     total <- length(files)
