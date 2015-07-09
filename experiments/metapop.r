@@ -1207,21 +1207,41 @@ metapop.heatmap <- function(dat, max.pop, save.path, pop.size=FALSE,
 
     # plots color gradient at top
     plot(range(0,max.shades),c(0,1),type="n", ann=FALSE, axes=FALSE)
+    grad.bottom <- 10
+    grad.top <- grad.bottom - 0.5
     for (i in 1:max.shades) {
-        rect(i-shift, 0, i+shift, 1, col=all.colors[i],border=NA)
+        rect(i-shift, grad.bottom, i+shift, grad.top,
+             col=all.colors[i],border=NA)
     }
 
     par(mar=c(1,1,1,1))
     plot(c(1,rows),c(1,cols),type="n",axes=FALSE,ann=FALSE,
          ylim=c(shift,rows+shift), xlim=c(shift,cols+shift))
     title(paste("Timestep: ", timestep, sep=""))
-    left <- 1; right <- cols
+    left <- if (identical(device, "jpeg")) {
+        0.6
+    } else {
+        1
+    }
+    right <- cols
     middle <- mean(c(left,right))
     grad.key.color <- "black"
     grad.key.color2 <- "black"
-    grad.key.size  <- 1.0 
-    grad.key.line1 <- 5.7
-    grad.key.line2 <- 4.7
+    grad.key.size  <- if (identical(device,"jpeg")) {
+        2.0 
+    } else {
+        1.0
+    }
+    grad.key.line1 <- if (identical(device,"jpeg")) {
+        6.7
+    } else {
+        5.7
+    }
+    grad.key.line2 <- if (identical(device,"jpeg")) {
+        5.7
+    } else {
+        4.7
+    }
     mtext(side=3,at=left,  line=grad.key.line2, text="0",
           font=2, col=grad.key.color, cex=grad.key.size)
     mtext(side=3,at=middle,line=grad.key.line2, text="50",
