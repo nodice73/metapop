@@ -242,8 +242,16 @@ class CoopToCheatAddnl(CoopToCheat):
     def __init__(self):
         super(CoopToCheatAddnl, self).__init__()
         self.frac_occupied = [1]
+        self.mutant_freqs = [2e-4, 2e-3]
+        self.migration_rates = [1e-6, 1e-7]
+
+class HighOutput(CoopToCheat):
+    def __init__(self):
+        super(HighOutput, self).__init__()
+        self.frac_occupied = [0.5, 0.75, 1.0]
         self.mutant_freqs = [0]
-        self.migration_rates = [0, 1e-6, 1e-7]
+        self.migration_rates = [1e-6, 1e-7]
+        self.save_every = [10]
 
 class NoMut(AdaptiveRace):
     def __init__(self):
@@ -261,7 +269,7 @@ class LowOcc(AdaptiveRace):
 class OtherConds(CoopToCheat):
     def __init__(self):
         super(OtherConds, self).__init__()
-        self.frac_occupied = [0.5]
+        self.frac_occupied = [0.5, 1]
         self.mutant_freqs = [0, 2e-5, 2e-4, 2e-3]
 
 class AncToEvo(OtherConds):
@@ -275,8 +283,18 @@ class AncToEvo(OtherConds):
 class LowRelease(OtherConds):
     def __init__(self):
         super(LowRelease, self).__init__()
-        self.coop_release = [0.457, 0.00172]
+        self.coop_release = [0.3, 0.15]
+        self.mutant_freqs = [0]
+        self.migration_rates = [0] + [10**-y for y in reversed(range(2,10))]
         self.output = 'CoopToCheat/LowRelease'
+
+class EvoOnly(OtherConds):
+    def __init__(self):
+        super(EvoOnly, self).__init__()
+        self.mutant_freqs = [1]
+        self.frac_occupied = [0.5, 1]
+        self.migration_rates = [0, 1e-7]
+        self.output = 'CoopToCheat/EvoOnly'
 
 class ReleaseTest(AdaptiveRaceParams):
     def __init__(self):
@@ -349,7 +367,14 @@ if __name__ == "__main__":
     #ps = CoopToCheat()
     #ps = CoopToCheatAddnl()
     #ps = LowRelease()
+<<<<<<< HEAD
     ps = AncToEvo()
 
     #ps.test(1)
     ps.run(1)
+=======
+    #ps = EvoOnly()
+    ps = HighOutput()
+    #ps.test(1)
+    ps.run(25)
+>>>>>>> heatmap
