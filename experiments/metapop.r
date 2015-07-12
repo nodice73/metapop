@@ -1242,7 +1242,6 @@ metapop.heatmap <- function(dat, max.pop, save.path, pop.size=FALSE,
 
     plot(c(1,rows),c(1,cols),type="n",axes=FALSE,ann=FALSE,
          ylim=c(shift,rows+shift), xlim=c(shift,cols+shift))
-    title(paste("Timestep: ", timestep, sep=""))
     left <- if (identical(device, "jpeg")) {
         0.5
     } else {
@@ -1276,6 +1275,11 @@ metapop.heatmap <- function(dat, max.pop, save.path, pop.size=FALSE,
     mtext(side=3,at=middle,line=grad.key.line1, text="Percent cheater",
           font=2, col=grad.key.color2, cex=grad.key.size)
     background.grid(rows,cols,shift,col="white")
+
+    title.size  <- if (identical(device,"jpeg")) {
+        1.7
+    }
+    title(paste("Timestep: ", timestep, sep="", cex=title.size))
 
     real.max.pop <- max(dat$coops + dat$cheats)
     if (real.max.pop > max.pop) max.pop <- real.max.pop
