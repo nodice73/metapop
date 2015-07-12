@@ -1221,27 +1221,30 @@ metapop.heatmap <- function(dat, max.pop, save.path, pop.size=FALSE,
     }
     par(oma=c(1,1,1,1))
     par(lwd=2, font=1, family="sans")
+    height1 <- if (identical(device, "jpeg")) {
+        0.1
+    } else {
+        0.1
+    }
     nf <- layout(matrix(c(1,2),2,1,byrow=TRUE),
                  widths=c(par()$cin[2],par()$cin[2]),
-                 heights=c(par()$cin[1]*0.1,par()$cin[1]*0.9))
+                 heights=c(par()$cin[1]*height1,par()$cin[1]*(1-height1)))
 
     opar <- par(mar=c(1,1,1,1))
-
     # plots color gradient at top
     plot(range(0,max.shades),c(0,1),type="n", ann=FALSE, axes=FALSE)
-    grad.bottom <- 10
-    grad.top <- grad.bottom - 0.5
+    grad.bottom <- 0.4
+    grad.top <- grad.bottom - 0.4
     for (i in 1:max.shades) {
-        rect(i-shift, grad.bottom, i+shift, grad.top,
+        rect(i-shift-0.5, grad.bottom, i+shift-0.5, grad.top,
              col=all.colors[i],border=NA)
     }
 
-    par(mar=c(1,1,1,1))
     plot(c(1,rows),c(1,cols),type="n",axes=FALSE,ann=FALSE,
          ylim=c(shift,rows+shift), xlim=c(shift,cols+shift))
     title(paste("Timestep: ", timestep, sep=""))
     left <- if (identical(device, "jpeg")) {
-        0.6
+        0.5
     } else {
         1
     }
@@ -1250,17 +1253,17 @@ metapop.heatmap <- function(dat, max.pop, save.path, pop.size=FALSE,
     grad.key.color <- "black"
     grad.key.color2 <- "black"
     grad.key.size  <- if (identical(device,"jpeg")) {
-        2.0 
+        1.7
     } else {
         1.0
     }
     grad.key.line1 <- if (identical(device,"jpeg")) {
-        6.7
-    } else {
         5.7
+    } else {
+        4.7
     }
     grad.key.line2 <- if (identical(device,"jpeg")) {
-        5.7
+        3.7
     } else {
         4.7
     }
