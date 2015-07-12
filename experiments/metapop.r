@@ -37,6 +37,7 @@ metapop.process <- function(path, nrows=-1) {
         cat("\nFile", path, "had 0 size.\n")
         return()
     }
+    info  <- parse.infofile(file.path(dirname(path), INFO_FILE))
 
     dat <- read.delim(path, stringsAsFactors=FALSE, nrows=nrows)
     dat[is.na(dat)] <- 0
@@ -56,7 +57,7 @@ metapop.process <- function(path, nrows=-1) {
 
     list(data=dat, summary=dat.summary, coop.cols=coop.cols,
          cheat.cols=cheat.cols, coop.sum.col=coop.sum.col,
-         cheat.sum.col=cheat.sum.col)
+         cheat.sum.col=cheat.sum.col, timestep.scale=info$ts.scale)
 }
 
 plot.folder <- function(folder, save.path, run.pattern, device="png", 
@@ -1150,10 +1151,12 @@ metapop.heatmap <- function(dat, max.pop, save.path, pop.size=FALSE,
 {
     if (missing(save.path)) save.path <- "."
     if (missing(pop.size)) pop.size <- FALSE
-    #info <- parse.infofile(file.path(dat, INFO_FILE))
+
+    timestep <- unique(dat$data$timestep)
+    hrs  <- timestep/dat$timestep.scale
     coop.cols <- dat$coop.cols
     cheat.cols <- dat$cheat.cols
-    dat <- dat$dat
+    dat <- dat$data
     rows <- max(dat$row)
     cols <- max(dat$col)
     ext <- if (device != "x11") paste(".",device,sep="")
@@ -1211,7 +1214,6 @@ metapop.heatmap <- function(dat, max.pop, save.path, pop.size=FALSE,
         #cat(info, file=file.path(save.path,"info.txt"))
     }
 
-    timestep  <- unique(dat$timestep)
     coop.mat  <- matrix(0,nrow=rows,ncol=cols)
     cheat.mat <- matrix(0,nrow=rows,ncol=cols)
 
@@ -1239,6 +1241,7 @@ metapop.heatmap <- function(dat, max.pop, save.path, pop.size=FALSE,
         rect(i-shift-0.5, grad.bottom, i+shift-0.5, grad.top,
              col=all.colors[i],border=NA)
     }
+
 
     plot(c(1,rows),c(1,cols),type="n",axes=FALSE,ann=FALSE,
          ylim=c(shift,rows+shift), xlim=c(shift,cols+shift))
@@ -1275,11 +1278,10 @@ metapop.heatmap <- function(dat, max.pop, save.path, pop.size=FALSE,
     mtext(side=3,at=middle,line=grad.key.line1, text="Percent cheater",
           font=2, col=grad.key.color2, cex=grad.key.size)
     background.grid(rows,cols,shift,col="white")
-
     title.size  <- if (identical(device,"jpeg")) {
         1.7
     }
-    title(paste("Timestep: ", timestep, sep="", cex=title.size))
+    title(paste0(hrs, " hours"), cex.main=title.size)
 
     real.max.pop <- max(dat$coops + dat$cheats)
     if (real.max.pop > max.pop) max.pop <- real.max.pop
