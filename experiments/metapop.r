@@ -37,6 +37,7 @@ metapop.process <- function(path, nrows=-1) {
         cat("\nFile", path, "had 0 size.\n")
         return()
     }
+    info  <- parse.infofile(file.path(dirname(path), INFO_FILE))
 
     dat <- read.delim(path, stringsAsFactors=FALSE, nrows=nrows)
     dat[is.na(dat)] <- 0
@@ -56,7 +57,7 @@ metapop.process <- function(path, nrows=-1) {
 
     list(data=dat, summary=dat.summary, coop.cols=coop.cols,
          cheat.cols=cheat.cols, coop.sum.col=coop.sum.col,
-         cheat.sum.col=cheat.sum.col)
+         cheat.sum.col=cheat.sum.col, timestep.scale=info$ts.scale)
 }
 
 plot.folder <- function(folder, save.path, run.pattern, device="png", 
@@ -114,7 +115,7 @@ plot.all <- function(folder, ...) {
     for (condition in conditions) {
         runs <- list.files(condition, full.names=TRUE)
         for (run in runs) {
-            plot.timepoints(run, ...)
+            try(plot.timepoints(run, ...))
         }
     }
 }
@@ -122,8 +123,8 @@ plot.all <- function(folder, ...) {
 plot.timepoints <- function(folder, data.ext="tab", device="x11",
                             save.path, row.col="all", plot.type="cell",
                             save.movie=FALSE, write.data=FALSE, 
-                            show.resource=FALSE, rsample, xlim,
-                            ylim=c(1e-2,1e6), overwrite=TRUE)
+                            show.resource=FALSE, rsample, xlim, ylim,
+                            overwrite=TRUE)
 {
     graphics.off()
     if (is.na(folder)) stop("Folder is NA!")
@@ -155,19 +156,21 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
     plot.name <- paste0(title.name, "_", row.col, "_", plot.type, "_",
                         passed.xlim[1], "-", passed.xlim[2])
     full.name <- file.path(save.path, plot.name)
-    if (!overwrite && exists(full.name)) {
-        cat(full.name, ' exists, skipping...\n')
-        return
+
+    if (!overwrite && file.exists(paste0(full.name, ".", device))) {
+        cat(full.name, ' exists, skipping...\n\n')
+        return()
     }
 
     plot.files <- files$files[which(timepoints %in% hrs)]
     n.plot.files <- length(plot.files)
 
     passed.ylim <- eval(match.call()$ylim)
-    y.range <- ylim
     if (is.null(passed.ylim)) {
         if (identical(row.col, "total")) {
             y.range <- c(1,1e9)
+        } else if (!show.resource) {
+            y.range <- c(1, 1e6)
         }
     } else {
         y.range <- c(passed.ylim[1], passed.ylim[2])
@@ -686,10 +689,15 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                 if (any(current.df.row$complete)) {
                     remove.rows <- 
                         c(remove.rows, 
-                          matching.id.rows[!current.df.row$complete])
+                          row.names(
+                            current.df[
+                                matching.id.rows[!current.df.row$complete],]))
+
                     next
                 } else {
-                    remove.rows <- c(remove.rows, matching.id.rows[-1])
+                    remove.rows <- c(remove.rows, 
+                                     row.names(
+                                        current.df[matching.id.rows[-1],]))
                 }
             }
 
@@ -792,7 +800,8 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
     cat("\n")
     res <- res[1:(row.idx-1),]
     if (!is.null(remove.rows)) {
-        current.df <- current.df[-remove.rows,]
+        cat("removing redundant entries...\n")
+        current.df <- current.df[!row.names(current.df) %in% c(remove.rows),]
     }
     current.df <- rbind(current.df, res)
     current.df
@@ -962,8 +971,8 @@ plot.survival <- function(dat, split2="occ", device="x11",
     for (mig.range in split(dat, dat$range)) {
         rang <- unique(mig.range$range)
         for (s2 in split(mig.range, mig.range[[split2]])) {
-            occ <- sprintf("%.2f", unique(s2$occ))
-            split2.val <- sprintf("%.2f", unique(s2[[split2]]))
+            occ <- sprintf("%.2g", unique(s2$occ))
+            split2.val <- sprintf("%.2g", unique(s2[[split2]]))
             plot.name <- paste0(rang, ", ", split2, "=", split2.val,
                                 "_survive_freq")
             plot.path <- file.path(save.to, plot.name)
@@ -1124,8 +1133,7 @@ save.to <- function(data.folder, save.path) {
 metapop.makeheatmaps <- function(folder, first=0, last, data.ext="tab",
                                  device="jpeg", pop.size, ...) {
     graphics.off()
-    save.path <- save.to(data.folder=folder, ...)
-    save.path <- file.path(save.path, "movie")
+    save.path <- save.to(data.folder=file.path(folder,"movie"), ...)
     file.copy(file.path(folder, INFO_FILE), save.path)
     files <- get.files(folder, data.ext)$files
     total <- length(files)
@@ -1143,10 +1151,12 @@ metapop.heatmap <- function(dat, max.pop, save.path, pop.size=FALSE,
 {
     if (missing(save.path)) save.path <- "."
     if (missing(pop.size)) pop.size <- FALSE
-    #info <- parse.infofile(file.path(dat, INFO_FILE))
+
+    timestep <- unique(dat$data$timestep)
+    hrs  <- timestep/dat$timestep.scale
     coop.cols <- dat$coop.cols
     cheat.cols <- dat$cheat.cols
-    dat <- dat$dat
+    dat <- dat$data
     rows <- max(dat$row)
     cols <- max(dat$col)
     ext <- if (device != "x11") paste(".",device,sep="")
@@ -1204,7 +1214,6 @@ metapop.heatmap <- function(dat, max.pop, save.path, pop.size=FALSE,
         #cat(info, file=file.path(save.path,"info.txt"))
     }
 
-    timestep  <- unique(dat$timestep)
     coop.mat  <- matrix(0,nrow=rows,ncol=cols)
     cheat.mat <- matrix(0,nrow=rows,ncol=cols)
 
@@ -1214,29 +1223,52 @@ metapop.heatmap <- function(dat, max.pop, save.path, pop.size=FALSE,
     }
     par(oma=c(1,1,1,1))
     par(lwd=2, font=1, family="sans")
+    height1 <- if (identical(device, "jpeg")) {
+        0.1
+    } else {
+        0.1
+    }
     nf <- layout(matrix(c(1,2),2,1,byrow=TRUE),
                  widths=c(par()$cin[2],par()$cin[2]),
-                 heights=c(par()$cin[1]*0.1,par()$cin[1]*0.9))
+                 heights=c(par()$cin[1]*height1,par()$cin[1]*(1-height1)))
 
     opar <- par(mar=c(1,1,1,1))
-
     # plots color gradient at top
     plot(range(0,max.shades),c(0,1),type="n", ann=FALSE, axes=FALSE)
+    grad.bottom <- 0.4
+    grad.top <- grad.bottom - 0.4
     for (i in 1:max.shades) {
-        rect(i-shift, 0, i+shift, 1, col=all.colors[i],border=NA)
+        rect(i-shift-0.5, grad.bottom, i+shift-0.5, grad.top,
+             col=all.colors[i],border=NA)
     }
 
-    par(mar=c(1,1,1,1))
+
     plot(c(1,rows),c(1,cols),type="n",axes=FALSE,ann=FALSE,
          ylim=c(shift,rows+shift), xlim=c(shift,cols+shift))
-    title(paste("Timestep: ", timestep, sep=""))
-    left <- 1; right <- cols
+    left <- if (identical(device, "jpeg")) {
+        0.5
+    } else {
+        1
+    }
+    right <- cols
     middle <- mean(c(left,right))
     grad.key.color <- "black"
     grad.key.color2 <- "black"
-    grad.key.size  <- 1.0 
-    grad.key.line1 <- 5.7
-    grad.key.line2 <- 4.7
+    grad.key.size  <- if (identical(device,"jpeg")) {
+        1.7
+    } else {
+        1.0
+    }
+    grad.key.line1 <- if (identical(device,"jpeg")) {
+        5.7
+    } else {
+        4.7
+    }
+    grad.key.line2 <- if (identical(device,"jpeg")) {
+        3.7
+    } else {
+        4.7
+    }
     mtext(side=3,at=left,  line=grad.key.line2, text="0",
           font=2, col=grad.key.color, cex=grad.key.size)
     mtext(side=3,at=middle,line=grad.key.line2, text="50",
@@ -1246,6 +1278,10 @@ metapop.heatmap <- function(dat, max.pop, save.path, pop.size=FALSE,
     mtext(side=3,at=middle,line=grad.key.line1, text="Percent cheater",
           font=2, col=grad.key.color2, cex=grad.key.size)
     background.grid(rows,cols,shift,col="white")
+    title.size  <- if (identical(device,"jpeg")) {
+        1.7
+    }
+    title(paste0(hrs, " hours"), cex.main=title.size)
 
     real.max.pop <- max(dat$coops + dat$cheats)
     if (real.max.pop > max.pop) max.pop <- real.max.pop
