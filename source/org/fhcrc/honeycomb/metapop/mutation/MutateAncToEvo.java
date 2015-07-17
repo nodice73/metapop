@@ -19,6 +19,7 @@
 
 package org.fhcrc.honeycomb.metapop.mutation;
 
+import org.fhcrc.honeycomb.metapop.World;
 import org.fhcrc.honeycomb.metapop.Population;
 import org.fhcrc.honeycomb.metapop.Subpopulation;
 import org.fhcrc.honeycomb.metapop.RandomNumberUser;
@@ -45,7 +46,8 @@ public class MutateAncToEvo implements MutationRule {
         this.rng = rng;
     }
 
-    public void mutate(List<Population> pops) {
+    public void mutate(World world) {
+        List<Population> pops = world.getOccupiedLocations().getList();
         if (anc_to_evo == 0) {
             return;
         }

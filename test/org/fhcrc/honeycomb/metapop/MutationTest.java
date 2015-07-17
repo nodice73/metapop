@@ -26,7 +26,9 @@ import static org.junit.Assert.*;
  * @version $Id: MutationTest.java 2094 2013-05-31 01:48:48Z ajwaite $
  *
  */
+@Ignore
 public class MutationTest {
+    /*
     private double conf = 0.95;
 
     private RandomNumberUser rng = new RandomNumberUser(1);
@@ -140,4 +142,6 @@ public class MutationTest {
         FailReport.report("[PopulationTest] mutateCheatCoop()", failed,
                           mutation_rates.length, expect_fail);
     }
+    */
 }
+

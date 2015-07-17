@@ -19,8 +19,8 @@
 
 package org.fhcrc.honeycomb.metapop.mutation;
 
+import org.fhcrc.honeycomb.metapop.World;
 import org.fhcrc.honeycomb.metapop.Population;
-import org.fhcrc.honeycomb.metapop.Subpopulation;
 import org.fhcrc.honeycomb.metapop.RandomNumberUser;
 import org.fhcrc.honeycomb.metapop.mutation.MutateCoopToCheat;
 import org.fhcrc.honeycomb.metapop.mutation.MutateAncToEvo;
@@ -61,10 +61,13 @@ public class MutateCoopToCheatAncToEvoDelay implements MutationRule {
     }
 
     public void mutate(World world) {
-        pops = occupied_locations.getList()
-        coop_cheat.mutate(pops);
-        if world.getStep()/((double) world.getTimestepScale()) > delay_hrs {
-            anc_evo.mutate(pops);
+        coop_cheat.mutate(world);
+        double hr = world.getStep()/((double) world.getTimestepScale());
+        //System.out.println("hr: " + hr);
+                
+        if (hr > delay_hrs) {
+            //System.out.println("can mutate!");
+            anc_evo.mutate(world);
         }
     }
 

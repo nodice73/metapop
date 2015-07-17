@@ -19,6 +19,7 @@
 
 package org.fhcrc.honeycomb.metapop.mutation;
 
+import org.fhcrc.honeycomb.metapop.World;
 import org.fhcrc.honeycomb.metapop.Population;
 import org.fhcrc.honeycomb.metapop.Subpopulation;
 import org.fhcrc.honeycomb.metapop.RandomNumberUser;
@@ -58,9 +59,9 @@ public class MutateCoopToCheatAncToEvo implements MutationRule {
         this.anc_evo = new MutateAncToEvo(anc_to_evo, rng);
     }
 
-    public void mutate(List<Population> pops) {
-        coop_cheat.mutate(pops);
-        anc_evo.mutate(pops);
+    public void mutate(World world) {
+        coop_cheat.mutate(world);
+        anc_evo.mutate(world);
     }
 
     @Override
