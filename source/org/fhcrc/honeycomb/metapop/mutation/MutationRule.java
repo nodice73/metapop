@@ -20,6 +20,7 @@
 package org.fhcrc.honeycomb.metapop.mutation;
 
 import org.fhcrc.honeycomb.metapop.Population;
+import org.fhcrc.honeycomb.metapop.World;
 
 import java.util.List;
 
@@ -33,5 +34,5 @@ import java.util.List;
  *
  */
 public interface MutationRule {
-    public void mutate(List<Population> pop);
+    public void mutate(World world);
 }

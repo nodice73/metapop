@@ -299,7 +299,7 @@ public class World implements StepProvider, Saveable {
     }
 
     public void mutate() {
-        mutation_rule.mutate(occupied_locations.getList());
+        mutation_rule.mutate(this);
     }
 
     private void dilute() {
