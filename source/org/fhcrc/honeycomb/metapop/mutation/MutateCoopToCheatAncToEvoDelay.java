@@ -63,7 +63,7 @@ public class MutateCoopToCheatAncToEvoDelay implements MutationRule {
     public void mutate(World world) {
         pops = occupied_locations.getList()
         coop_cheat.mutate(pops);
-        if world.getStep()/world.getTimestepScale() > delay_hrs {
+        if world.getStep()/((double) world.getTimestepScale()) > delay_hrs {
             anc_evo.mutate(pops);
         }
     }
