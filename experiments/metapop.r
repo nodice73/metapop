@@ -115,7 +115,7 @@ plot.all <- function(folder, ...) {
     for (condition in conditions) {
         runs <- list.files(condition, full.names=TRUE)
         for (run in runs) {
-            plot.timepoints(run, ...)
+            try(plot.timepoints(run, ...))
         }
     }
 }
@@ -158,7 +158,7 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
     full.name <- file.path(save.path, plot.name)
 
     if (!overwrite && file.exists(paste0(full.name, ".", device))) {
-        cat(full.name, ' exists, skipping...\n')
+        cat(full.name, ' exists, skipping...\n\n')
         return()
     }
 
