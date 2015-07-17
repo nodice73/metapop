@@ -128,7 +128,7 @@ class AdaptiveRaceParams(object):
 
     def run(self, reps):
         self.prep(reps)
-        max_queue = 75
+        max_queue = 70
         if self.sbatch:
             sent = 0
             n_runs = len(self.commands)
@@ -270,7 +270,19 @@ class AncToEvo(OtherConds):
         self.mutant_freqs = [0]
         self.coop_freq = [0.5]
         self.frac_occupied = [0.5]
-        self.anc_to_evo = [1e-13, 1e-12, 1e-11, 1e-7]
+        self.anc_to_evo = [10**-y for y in reversed(range(8,13))]
+
+class Sanity(OtherConds):
+    def __init__(self):
+        super(Sanity, self).__init__()
+        self.mutant_freqs = [0]
+        self.coop_freq = [0.5]
+        self.frac_occupied = [0.5]
+        self.anc_to_evo = [1e-11]
+        self.migration_rates = [1e-7]
+        self.evo_km_adv = [1]
+        self.evo_death_adv = [1]
+        self.evo_trade = [1]
 
 class LowRelease(OtherConds):
     def __init__(self):
@@ -349,7 +361,7 @@ if __name__ == "__main__":
     #ps = CoopToCheat()
     #ps = CoopToCheatAddnl()
     #ps = LowRelease()
-    ps = AncToEvo()
+    ps = Sanity()
 
     #ps.test(1)
-    ps.run(1)
+    ps.run(60)
