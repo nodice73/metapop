@@ -342,13 +342,13 @@ class Test(AdaptiveRaceParams):
         self.migration_ranges = ['global']
         self.mutant_freqs = [0]
         self.migration_rates = [0]
-        self.coop_freq = [0.99999]
+        self.coop_freq = [0.5]
         self.coop_to_cheat = [1e-7];
-        self.anc_to_evo = [1e-12]
+        self.anc_to_evo = [1e-6]
         self.frac_occupied = [0.5]
-        self.seeds = [str(i) for i in '1'*self.n_seeds]
-        self.save_every = [10]
-        self.hours = [1000]
+        #self.seeds = [str(i) for i in '1'*self.n_seeds]
+        self.save_every = [1]
+        self.hours = [10]
 
 class Benchmark(AdaptiveRaceParams):
     def __init__(self):
@@ -367,7 +367,7 @@ class Benchmark(AdaptiveRaceParams):
 
 if __name__ == "__main__":
     #ps = Benchmark()
-    #ps = Test()
+    ps = Test()
     #ps = AncReleaseTest()
     #ps = EvoReleaseTest()
     #ps = AdaptiveRace()
@@ -382,7 +382,7 @@ if __name__ == "__main__":
     #ps = EvoOnly()
     #ps = HighOutput()
     #ps = AncToEvo()
-    ps = Sanity()
+    #ps = Sanity()
 
     #ps.test(1)
-    ps.run(60)
+    ps.run(1)
