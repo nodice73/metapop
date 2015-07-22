@@ -83,8 +83,8 @@ class AdaptiveRaceParams(object):
         self.sbatch = ''
         self.end = ''
         self.save_base = 'dat'
-        if hostname == 'Nietzsche':
-            self.java = "time java -Xmx1000m -server"
+        if hostname == 'KropotkinII':
+            self.java = "time java -Xmx4000m -server"
         elif hostname == 'eureka':
             self.java = "time java -Xmx4000m -server"
         else:
