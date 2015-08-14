@@ -923,8 +923,9 @@ plot.summary <- function(dat, device="x11", save.to=NULL, jit=NULL, gap=2,
     #print(surf)
 }
 
-plot.survival <- function(dat, split2="occ", device="x11", 
-                          save.to=".", cutoff=0.1, min.hr=2e4, ...)
+plot.survival <- function(dat, last.split="mutant-freq", split2="occ",
+                          device="x11", save.to=".",
+                          cutoff=0.1, min.hr=2e4, ...)
 {
     graphics.off()
     library(binom)
@@ -937,14 +938,13 @@ plot.survival <- function(dat, split2="occ", device="x11",
     x.range <- range(1:n.migs)
     y.range <- c(0-y.pad, 1+y.pad)
 
-    last.split.name <- NULL
     leg.title <- ""
-    if(length(unique(dat$`mutant-freq`))>1) {
+    if (identical(last.split, "mutant-freq")) {
         leg.title <- "   initial mutants   "
-        last.split.name <- "mutant-freq"
-    } else {
+    } else if (identical(last.split, "u2")) {
+        leg.title <- "   Anc to Evo mutation rate (\\hr)    "
+    } else if (identical(last.split, "n")) {
         leg.title <- "   initial size   "
-        last.split.name <- "n"
     }
 
     draw.arrows <- function(est, color) {
@@ -966,7 +966,7 @@ plot.survival <- function(dat, split2="occ", device="x11",
         }
     }
 
-    n.conds <- length(unique(dat[[last.split.name]]))
+    n.conds <- length(unique(dat[[last.split]]))
     all.res <- data.frame()
     for (mig.range in split(dat, dat$range)) {
         rang <- unique(mig.range$range)
@@ -983,11 +983,11 @@ plot.survival <- function(dat, split2="occ", device="x11",
                  ...)
             title(main=plot.name,cex.main=1)
 
-            color.start <- 1 #ifelse(last.split.name=="n", 2, 1)
+            color.start <- 1 #ifelse(last.split=="n", 2, 1)
             color <- color.start
-            by.last <- split(s2, s2[[last.split.name]])
+            by.last <- split(s2, s2[[last.split]])
             cond <- unique(names(by.last))
-            if (last.split.name=="mutant-freq") { 
+            if (last.split=="mutant-freq") {
                 cond <- as.numeric(cond)*unique(s2$n)
             }
             for (i in seq_along(by.last)) {
@@ -1001,7 +1001,7 @@ plot.survival <- function(dat, split2="occ", device="x11",
                     }
                     if (mig.rate %in% unique(last$mig)) {
                         last.ss <- last[last$mig==mig.rate,]
-                        last.s <- unique(last.ss[last.split.name])
+                        last.s <- unique(last.ss[last.split])
                         survived <- length(last.ss$coop.freq.mean[
                                            last.ss$coop.freq.mean>cutoff])
                         tot <- length(last.ss$coop.freq.mean)
