@@ -155,6 +155,11 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
 
     plot.name <- paste0(title.name, "_", row.col, "_", plot.type, "_",
                         passed.xlim[1], "-", passed.xlim[2])
+
+    if (!is.null(eval(match.call()$rsample))) {
+        plot.name <- paste0(plot.name, , "_rsample=", rsample)
+    }
+
     full.name <- file.path(save.path, plot.name)
 
     if (!overwrite && file.exists(paste0(full.name, ".", device))) {
@@ -640,9 +645,9 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
     if (length(conditions)==0) stop("no folders match.")
     var.list <- make.var.list(conditions)
 
-    res.names <- c(names(var.list), "condition", "run.id", "coop.freq.mean",
-                   "coop.freq.sd", "coop.size.mean", "coop.size.sd", 
-                   "timepoints.used", "last", "complete")
+    res.names <- c(names(var.list), "sim.hrs", "condition", "run.id",
+                   "coop.freq.mean", "coop.freq.sd", "coop.size.mean",
+                   "coop.size.sd", "timepoints.used", "last", "complete")
 
     res <- data.frame(matrix(0, nrow=n.conditions*max.runs,
                              ncol=length(res.names)))
@@ -778,7 +783,7 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                 res[row.idx,]$coop.size.sd    <- size.sd
                 res[row.idx,]$timepoints.used <- used
                 res[row.idx,]$last            <- last
-                res[row.idx,]$hrs             <- final.hr
+                res[row.idx,]$sim.hrs         <- final.hr
                 res[row.idx,]$complete        <- complete
                 row.idx <- row.idx+1
             } else if (updating) {
@@ -791,7 +796,7 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                 current.df[current.row,]$coop.size.sd    <- size.sd
                 current.df[current.row,]$timepoints.used <- used
                 current.df[current.row,]$last            <- last
-                current.df[current.row,]$hrs             <- final.hr
+                current.df[current.row,]$sim.hrs         <- final.hr
                 current.df[current.row,]$complete        <- complete
             }
         }
