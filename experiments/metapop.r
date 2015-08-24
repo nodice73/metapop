@@ -763,7 +763,7 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
             }
 
             complete <- FALSE
-            if (length(coop.freqs) == 1 || final.hr >= min.hr) {
+            if (length(coop.freqs) == 1 || final.hr == res[row.idx,]$hrs) {
                 cat(run.id, "appears complete\n")
                 complete <- TRUE
             } else {
