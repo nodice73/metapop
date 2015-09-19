@@ -173,7 +173,7 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
     passed.ylim <- eval(match.call()$ylim)
     if (is.null(passed.ylim)) {
         if (identical(row.col, "total")) {
-            y.range <- c(1,1e9)
+            y.range <- c(1,1e8)
         } else if (!show.resource) {
             y.range <- c(1, 1e6)
         }
