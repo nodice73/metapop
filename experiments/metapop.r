@@ -109,11 +109,21 @@ plot.folder <- function(folder, save.path, run.pattern, device="png",
     res
 }
 
+plot.all <- function(folder, ...) {
+    conditions <- list.files(folder, full.names=TRUE)
+    for (condition in conditions) {
+        runs <- list.files(condition, full.names=TRUE)
+        for (run in runs) {
+            plot.timepoints(run, ...)
+        }
+    }
+}
+
 plot.timepoints <- function(folder, data.ext="tab", device="x11",
                             save.path, row.col="all", plot.type="cell",
                             save.movie=FALSE, write.data=FALSE, 
-                            show.resource=FALSE, rsample, xlim,
-                            ylim=c(1e-2,1e6))
+                            show.resource=FALSE, rsample, xlim, ylim,
+                            overwrite=TRUE)
 {
     graphics.off()
     if (is.na(folder)) stop("Folder is NA!")
@@ -125,15 +135,15 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
         if (!file.exists(movie.folder)) dir.create(movie.folder)
     }
 
-    run.id <- basename(folder)
-    info <- parse.infofile(file.path(folder, INFO_FILE))
+    info  <- parse.infofile(file.path(folder, INFO_FILE))
     files <- get.files(folder, "tab")
     gc()
 
     timepoints <- files$timepoints/info$ts.scale
     world.size <- info$rows * info$cols
 
-
+    run.id <- basename(folder)
+    title.name <- run.id
     passed.xlim <- eval(match.call()$xlim)
     hrs <- if (is.null(passed.xlim)) {
         passed.xlim <- range(timepoints)
@@ -142,14 +152,24 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
         timepoints[timepoints>=passed.xlim[1] & timepoints<=passed.xlim[2]]
     }
 
+    plot.name <- paste0(title.name, "_", row.col, "_", plot.type, "_",
+                        passed.xlim[1], "-", passed.xlim[2])
+    full.name <- file.path(save.path, plot.name)
+
+    if (!overwrite && file.exists(paste0(full.name, ".", device))) {
+        cat(full.name, ' exists, skipping...\n')
+        return()
+    }
+
     plot.files <- files$files[which(timepoints %in% hrs)]
     n.plot.files <- length(plot.files)
 
     passed.ylim <- eval(match.call()$ylim)
-    y.range <- ylim
     if (is.null(passed.ylim)) {
         if (identical(row.col, "total")) {
             y.range <- c(1,1e9)
+        } else if (!show.resource) {
+            y.range <- c(1, 1e6)
         }
     } else {
         y.range <- c(passed.ylim[1], passed.ylim[2])
@@ -198,12 +218,8 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
     }
 
     # cell plot
-    title.name <- run.id
-    plot.name <- paste0(title.name, "_", row.col, "_", plot.type, "_",
-                        passed.xlim[1], "-", passed.xlim[2])
     if (!identical(row.col, "none")) {
-        default.plot(w=square.plot.dim, h=square.plot.dim, device,
-                     file.path(save.path,plot.name))
+        default.plot(w=square.plot.dim, h=square.plot.dim, device, full.name)
         if (plot.type=="cell" || plot.type=="total") {
             plot(range(hrs), range(y.range), type="n", log="y",
                  axes=FALSE, ann=FALSE)
@@ -311,10 +327,11 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
         prev <- NULL
         current <- NULL
         if (identical(row.col, "total")) {
-            data.cols <- c(prev.all$coop.sum.col, prev.all$cheat.sum.col)
             prev <- prev.all$summary
             current <- current.all$summary
             paired <- rbind(prev, current)
+            data.cols <- c(grep("_coop", names(prev)),
+                           grep("_cheat", names(prev)))
             #extinct <- extinct + do.plot(paired)
         } else if (identical(row.col, "all")) {
             #if (show.resource) cat("not showing resource: row.col='all'")
@@ -671,10 +688,15 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                 if (any(current.df.row$complete)) {
                     remove.rows <- 
                         c(remove.rows, 
-                          matching.id.rows[!current.df.row$complete])
+                          row.names(
+                            current.df[
+                                matching.id.rows[!current.df.row$complete],]))
+
                     next
                 } else {
-                    remove.rows <- c(remove.rows, matching.id.rows[-1])
+                    remove.rows <- c(remove.rows, 
+                                     row.names(
+                                        current.df[matching.id.rows[-1],]))
                 }
             }
 
@@ -777,7 +799,8 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
     cat("\n")
     res <- res[1:(row.idx-1),]
     if (!is.null(remove.rows)) {
-        current.df <- current.df[-remove.rows,]
+        cat("removing redundant entries...\n")
+        current.df <- current.df[!row.names(current.df) %in% c(remove.rows),]
     }
     current.df <- rbind(current.df, res)
     current.df
@@ -947,8 +970,8 @@ plot.survival <- function(dat, split2="occ", device="x11",
     for (mig.range in split(dat, dat$range)) {
         rang <- unique(mig.range$range)
         for (s2 in split(mig.range, mig.range[[split2]])) {
-            occ <- sprintf("%.2f", unique(s2$occ))
-            split2.val <- sprintf("%.2f", unique(s2[[split2]]))
+            occ <- sprintf("%.2g", unique(s2$occ))
+            split2.val <- sprintf("%.2g", unique(s2[[split2]]))
             plot.name <- paste0(rang, ", ", split2, "=", split2.val,
                                 "_survive_freq")
             plot.path <- file.path(save.to, plot.name)
@@ -1040,7 +1063,7 @@ plot.survival <- function(dat, split2="occ", device="x11",
 make.var.list <- function(filenames) {
     vars <- c("range", "type", "n", "mutant-freq", "coop-release", "gamma",
               "coop-freq", "km", "cheat-adv", "evo-adv", "evo-trade",
-              "resource", "size", "occ", "mig", "u", "hrs")
+              "resource", "size", "occ", "mig", "u", "u2", "hrs")
     var.list <- vector("list", length(vars))
     names(var.list) <- vars
 
@@ -1109,8 +1132,7 @@ save.to <- function(data.folder, save.path) {
 metapop.makeheatmaps <- function(folder, first=0, last, data.ext="tab",
                                  device="jpeg", pop.size, ...) {
     graphics.off()
-    save.path <- save.to(data.folder=folder, ...)
-    save.path <- file.path(save.path, "movie")
+    save.path <- save.to(data.folder=file.path(folder,"movie"), ...)
     file.copy(file.path(folder, INFO_FILE), save.path)
     files <- get.files(folder, data.ext)$files
     total <- length(files)

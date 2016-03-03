@@ -9,7 +9,7 @@ import org.fhcrc.honeycomb.metapop.fitness.FitnessCalculator;
 import org.fhcrc.honeycomb.metapop.fitness.IdentityCalculator;
 
 import org.fhcrc.honeycomb.metapop.mutation.MutationRule;
-import org.fhcrc.honeycomb.metapop.mutation.MutateCoopCheat;
+import org.fhcrc.honeycomb.metapop.mutation.MutateCoopToCheat;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -86,7 +86,7 @@ public class MutationTest {
             Population pop_copy = pops.get(0);
 
             MutationRule mutate_coop_cheat =
-                new MutateCoopCheat(coop_to_cheat, 0, rng);
+                new MutateCoopToCheat(coop_to_cheat, 0, rng);
 
             mutate_coop_cheat.mutate(pops);
 
@@ -123,7 +123,7 @@ public class MutationTest {
             Population pop_copy = pops.get(0);
 
             MutationRule mutate_coop_cheat =
-                new MutateCoopCheat(0, cheat_to_coop, rng);
+                new MutateCoopToCheat(0, cheat_to_coop, rng);
 
             mutate_coop_cheat.mutate(pops);
 
