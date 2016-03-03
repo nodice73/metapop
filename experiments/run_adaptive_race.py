@@ -253,6 +253,16 @@ class HighOutput(CoopToCheat):
         self.migration_rates = [1e-6, 1e-7]
         self.save_every = [10]
 
+class AltFitness(CoopToCheat):
+    def __init__(self):
+        super(AltFitness, self).__init__()
+        self.frac_occupied = [0.5, 1.0]
+        self.mutant_freqs = [0]
+        self.evo_trade = [0.83]
+        self.evo_km_adv = [1.35]
+        self.evo_death_adv = [1.2]
+        self.mutant_freqs = [0, 2e-5, 2e-3, 1]
+
 class NoMut(AdaptiveRace):
     def __init__(self):
         super(NoMut, self).__init__()
@@ -272,8 +282,6 @@ class OtherConds(CoopToCheat):
         self.frac_occupied = [0.5, 1]
         self.mutant_freqs = [0, 2e-5, 2e-4, 2e-3]
 
-<<<<<<< HEAD
-=======
 class AncToEvo(OtherConds):
     def __init__(self):
         super(AncToEvo, self).__init__()
@@ -281,7 +289,6 @@ class AncToEvo(OtherConds):
         self.coop_freq = [0.5]
         self.frac_occupied = [0.5]
         self.anc_to_evo = [1e-13, 1e-12, 1e-11, 1e-7]
->>>>>>> anc-to-evo
 
 class LowRelease(OtherConds):
     def __init__(self):
@@ -372,7 +379,8 @@ if __name__ == "__main__":
     #ps = LowRelease()
     #ps = EvoOnly()
     #ps = HighOutput()
+    #ps = AltFitness()
     ps = AncToEvo()
 
-    #ps.test(1)
     ps.run(1)
+    #ps.test(1)
