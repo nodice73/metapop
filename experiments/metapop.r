@@ -37,6 +37,7 @@ metapop.process <- function(path, nrows=-1) {
         cat("\nFile", path, "had 0 size.\n")
         return()
     }
+    info  <- parse.infofile(file.path(dirname(path), INFO_FILE))
 
     dat <- read.delim(path, stringsAsFactors=FALSE, nrows=nrows)
     dat[is.na(dat)] <- 0
@@ -56,7 +57,7 @@ metapop.process <- function(path, nrows=-1) {
 
     list(data=dat, summary=dat.summary, coop.cols=coop.cols,
          cheat.cols=cheat.cols, coop.sum.col=coop.sum.col,
-         cheat.sum.col=cheat.sum.col)
+         cheat.sum.col=cheat.sum.col, timestep.scale=info$ts.scale)
 }
 
 plot.folder <- function(folder, save.path, run.pattern, device="png", 
@@ -114,7 +115,7 @@ plot.all <- function(folder, ...) {
     for (condition in conditions) {
         runs <- list.files(condition, full.names=TRUE)
         for (run in runs) {
-            plot.timepoints(run, ...)
+            try(plot.timepoints(run, ...))
         }
     }
 }
@@ -154,10 +155,15 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
 
     plot.name <- paste0(title.name, "_", row.col, "_", plot.type, "_",
                         passed.xlim[1], "-", passed.xlim[2])
+
+    if (!is.null(eval(match.call()$rsample))) {
+        plot.name <- paste0(plot.name, , "_rsample=", rsample)
+    }
+
     full.name <- file.path(save.path, plot.name)
 
     if (!overwrite && file.exists(paste0(full.name, ".", device))) {
-        cat(full.name, ' exists, skipping...\n')
+        cat(full.name, ' exists, skipping...\n\n')
         return()
     }
 
@@ -167,7 +173,7 @@ plot.timepoints <- function(folder, data.ext="tab", device="x11",
     passed.ylim <- eval(match.call()$ylim)
     if (is.null(passed.ylim)) {
         if (identical(row.col, "total")) {
-            y.range <- c(1,1e9)
+            y.range <- c(1,1e8)
         } else if (!show.resource) {
             y.range <- c(1, 1e6)
         }
@@ -639,9 +645,9 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
     if (length(conditions)==0) stop("no folders match.")
     var.list <- make.var.list(conditions)
 
-    res.names <- c(names(var.list), "condition", "run.id", "coop.freq.mean",
-                   "coop.freq.sd", "coop.size.mean", "coop.size.sd", 
-                   "timepoints.used", "last", "complete")
+    res.names <- c(names(var.list), "sim.hrs", "condition", "run.id",
+                   "coop.freq.mean", "coop.freq.sd", "coop.size.mean",
+                   "coop.size.sd", "timepoints.used", "last", "complete")
 
     res <- data.frame(matrix(0, nrow=n.conditions*max.runs,
                              ncol=length(res.names)))
@@ -757,7 +763,7 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
             }
 
             complete <- FALSE
-            if (length(coop.freqs) == 1 || final.hr >= min.hr) {
+            if (length(coop.freqs) == 1 || final.hr == res[row.idx,]$hrs) {
                 cat(run.id, "appears complete\n")
                 complete <- TRUE
             } else {
@@ -777,7 +783,7 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                 res[row.idx,]$coop.size.sd    <- size.sd
                 res[row.idx,]$timepoints.used <- used
                 res[row.idx,]$last            <- last
-                res[row.idx,]$hrs             <- final.hr
+                res[row.idx,]$sim.hrs         <- final.hr
                 res[row.idx,]$complete        <- complete
                 row.idx <- row.idx+1
             } else if (updating) {
@@ -790,7 +796,7 @@ summarize.runs <- function(folder, current.df=NULL, data.ext="tab", last=5,
                 current.df[current.row,]$coop.size.sd    <- size.sd
                 current.df[current.row,]$timepoints.used <- used
                 current.df[current.row,]$last            <- last
-                current.df[current.row,]$hrs             <- final.hr
+                current.df[current.row,]$sim.hrs         <- final.hr
                 current.df[current.row,]$complete        <- complete
             }
         }
@@ -922,8 +928,9 @@ plot.summary <- function(dat, device="x11", save.to=NULL, jit=NULL, gap=2,
     #print(surf)
 }
 
-plot.survival <- function(dat, split2="occ", device="x11", 
-                          save.to=".", cutoff=0.1, min.hr=2e4, ...)
+plot.survival <- function(dat, last.split="mutant-freq", split2="occ",
+                          device="x11", save.to=".",
+                          cutoff=0.1, min.hr=2e4, ...)
 {
     graphics.off()
     library(binom)
@@ -936,14 +943,13 @@ plot.survival <- function(dat, split2="occ", device="x11",
     x.range <- range(1:n.migs)
     y.range <- c(0-y.pad, 1+y.pad)
 
-    last.split.name <- NULL
     leg.title <- ""
-    if(length(unique(dat$`mutant-freq`))>1) {
+    if (identical(last.split, "mutant-freq")) {
         leg.title <- "   initial mutants   "
-        last.split.name <- "mutant-freq"
-    } else {
+    } else if (identical(last.split, "u2")) {
+        leg.title <- "   Anc to Evo mutation rate (\\hr)    "
+    } else if (identical(last.split, "n")) {
         leg.title <- "   initial size   "
-        last.split.name <- "n"
     }
 
     draw.arrows <- function(est, color) {
@@ -965,7 +971,7 @@ plot.survival <- function(dat, split2="occ", device="x11",
         }
     }
 
-    n.conds <- length(unique(dat[[last.split.name]]))
+    n.conds <- length(unique(dat[[last.split]]))
     all.res <- data.frame()
     for (mig.range in split(dat, dat$range)) {
         rang <- unique(mig.range$range)
@@ -982,11 +988,11 @@ plot.survival <- function(dat, split2="occ", device="x11",
                  ...)
             title(main=plot.name,cex.main=1)
 
-            color.start <- 1 #ifelse(last.split.name=="n", 2, 1)
+            color.start <- 1 #ifelse(last.split=="n", 2, 1)
             color <- color.start
-            by.last <- split(s2, s2[[last.split.name]])
+            by.last <- split(s2, s2[[last.split]])
             cond <- unique(names(by.last))
-            if (last.split.name=="mutant-freq") { 
+            if (last.split=="mutant-freq") {
                 cond <- as.numeric(cond)*unique(s2$n)
             }
             for (i in seq_along(by.last)) {
@@ -1000,7 +1006,7 @@ plot.survival <- function(dat, split2="occ", device="x11",
                     }
                     if (mig.rate %in% unique(last$mig)) {
                         last.ss <- last[last$mig==mig.rate,]
-                        last.s <- unique(last.ss[last.split.name])
+                        last.s <- unique(last.ss[last.split])
                         survived <- length(last.ss$coop.freq.mean[
                                            last.ss$coop.freq.mean>cutoff])
                         tot <- length(last.ss$coop.freq.mean)
@@ -1150,10 +1156,12 @@ metapop.heatmap <- function(dat, max.pop, save.path, pop.size=FALSE,
 {
     if (missing(save.path)) save.path <- "."
     if (missing(pop.size)) pop.size <- FALSE
-    #info <- parse.infofile(file.path(dat, INFO_FILE))
+
+    timestep <- unique(dat$data$timestep)
+    hrs  <- timestep/dat$timestep.scale
     coop.cols <- dat$coop.cols
     cheat.cols <- dat$cheat.cols
-    dat <- dat$dat
+    dat <- dat$data
     rows <- max(dat$row)
     cols <- max(dat$col)
     ext <- if (device != "x11") paste(".",device,sep="")
@@ -1211,7 +1219,6 @@ metapop.heatmap <- function(dat, max.pop, save.path, pop.size=FALSE,
         #cat(info, file=file.path(save.path,"info.txt"))
     }
 
-    timestep  <- unique(dat$timestep)
     coop.mat  <- matrix(0,nrow=rows,ncol=cols)
     cheat.mat <- matrix(0,nrow=rows,ncol=cols)
 
@@ -1221,29 +1228,52 @@ metapop.heatmap <- function(dat, max.pop, save.path, pop.size=FALSE,
     }
     par(oma=c(1,1,1,1))
     par(lwd=2, font=1, family="sans")
+    height1 <- if (identical(device, "jpeg")) {
+        0.1
+    } else {
+        0.1
+    }
     nf <- layout(matrix(c(1,2),2,1,byrow=TRUE),
                  widths=c(par()$cin[2],par()$cin[2]),
-                 heights=c(par()$cin[1]*0.1,par()$cin[1]*0.9))
+                 heights=c(par()$cin[1]*height1,par()$cin[1]*(1-height1)))
 
     opar <- par(mar=c(1,1,1,1))
-
     # plots color gradient at top
     plot(range(0,max.shades),c(0,1),type="n", ann=FALSE, axes=FALSE)
+    grad.bottom <- 0.4
+    grad.top <- grad.bottom - 0.4
     for (i in 1:max.shades) {
-        rect(i-shift, 0, i+shift, 1, col=all.colors[i],border=NA)
+        rect(i-shift-0.5, grad.bottom, i+shift-0.5, grad.top,
+             col=all.colors[i],border=NA)
     }
 
-    par(mar=c(1,1,1,1))
+
     plot(c(1,rows),c(1,cols),type="n",axes=FALSE,ann=FALSE,
          ylim=c(shift,rows+shift), xlim=c(shift,cols+shift))
-    title(paste("Timestep: ", timestep, sep=""))
-    left <- 1; right <- cols
+    left <- if (identical(device, "jpeg")) {
+        0.5
+    } else {
+        1
+    }
+    right <- cols
     middle <- mean(c(left,right))
     grad.key.color <- "black"
     grad.key.color2 <- "black"
-    grad.key.size  <- 1.0 
-    grad.key.line1 <- 5.7
-    grad.key.line2 <- 4.7
+    grad.key.size  <- if (identical(device,"jpeg")) {
+        1.7
+    } else {
+        1.0
+    }
+    grad.key.line1 <- if (identical(device,"jpeg")) {
+        5.7
+    } else {
+        4.7
+    }
+    grad.key.line2 <- if (identical(device,"jpeg")) {
+        3.7
+    } else {
+        4.7
+    }
     mtext(side=3,at=left,  line=grad.key.line2, text="0",
           font=2, col=grad.key.color, cex=grad.key.size)
     mtext(side=3,at=middle,line=grad.key.line2, text="50",
@@ -1253,6 +1283,10 @@ metapop.heatmap <- function(dat, max.pop, save.path, pop.size=FALSE,
     mtext(side=3,at=middle,line=grad.key.line1, text="Percent cheater",
           font=2, col=grad.key.color2, cex=grad.key.size)
     background.grid(rows,cols,shift,col="white")
+    title.size  <- if (identical(device,"jpeg")) {
+        1.7
+    }
+    title(paste0(hrs, " hours"), cex.main=title.size)
 
     real.max.pop <- max(dat$coops + dat$cheats)
     if (real.max.pop > max.pop) max.pop <- real.max.pop
